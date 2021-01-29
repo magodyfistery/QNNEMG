@@ -948,10 +948,10 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
             if epoch == numEpochsToIncreaseMomentum
                 momentum = options.momentum;
             end
-            velocity = momentum*velocity + alpha*gradient;
+            velocity = momentum*velocity + this.alpha*gradient;
             theta = theta - velocity;
             % Annealing the learning rate
-            alpha = learningRate*exp(-5*epoch/numEpochs);
+            this.alpha = this.qnnOption.learningRate*exp(-5*epoch/numEpochs);
         else
             error('Invalid selection for updating the weights \n');
         end

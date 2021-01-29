@@ -43,34 +43,32 @@ if testControl==true
     % emgRepetition is the value of the random data like 26,51,etc
     emgRepetition     = evalin('base','emgRepetition');   
     
-    if controlExit==false && usuario~="NaN"
-        
-        timeAnalized            = evalin('base','timeAnalized');
-        WindowRep               = evalin('base','JP_Longitud');
-        
-        % the total windows are 1 + (WindowRep - WindowsSize)/Stride
-        % but there is a last part not taken in account, for this is the
-        % floor function ex: 17.4 -> 17 if window size is 100, then 40
-        % points are discarded. This is good or bad??????
-        % Corrected formula:  1+ floor((WindowRep - WindowsSize)/Stride)
-        % they forget to include the first window
-        Numero_Ventanas     = 1+ floor((WindowRep - WindowsSize)/Stride); % *******************************************
-        EMG                 = emgDataTested;                % EMG de Window_size puntos
-        Vector_EMG_Features = emgFeatures;                  % Vectores en formato de tabla
-       %Vector_EMG_Features = table2array(emgFeatures);     % Vectores en formato de matriz
-        Vector_EMG_Tiempos  = timeAnalized;
-        Vector_EMG_Puntos   = timeAnalized*200;  % SHOULD CHANGE 200 by window SIZE?
-        Nombre_Usuario      = usuario;
-        
-        gestureName_         = evalin('base','gestureName_');
-        
-        if gestureName_~= "noGesture" && gestureName_ ~= "unknown"
+    
+    timeAnalized            = evalin('base','timeAnalized');
+    WindowRep               = evalin('base','JP_Longitud');
+
+    % the total windows are 1 + (WindowRep - WindowsSize)/Stride
+    % but there is a last part not taken in account, for this is the
+    % floor function ex: 17.4 -> 17 if window size is 100, then 40
+    % points are discarded. This is good or bad??????
+    % Corrected formula:  1+ floor((WindowRep - WindowsSize)/Stride)
+    % they forget to include the first window
+    Numero_Ventanas     = 1+ floor((WindowRep - WindowsSize)/Stride); % *******************************************
+    EMG                 = emgDataTested;                % EMG de Window_size puntos
+    Vector_EMG_Features = emgFeatures;                  % Vectores en formato de tabla
+   %Vector_EMG_Features = table2array(emgFeatures);     % Vectores en formato de matriz
+    Vector_EMG_Tiempos  = timeAnalized;
+    Vector_EMG_Puntos   = timeAnalized*200;  % SHOULD CHANGE 200 by window SIZE?
+    Nombre_Usuario      = usuario;
+
+    gestureName_         = evalin('base','gestureName_');
+
+    if gestureName_~= "noGesture" && gestureName_ ~= "unknown"
         groundTruthIndex_    = evalin('base','groundTruthIndex_');
         groundTruth_x        = evalin('base','groundTruth_x');
-        end
-        
-             
-    elseif controlExit==true && usuario~="NaN"
+    end
+    
+    if controlExit==true
         
         %clc
         assignin('base','emgRepetition',emgRepetition+1);        

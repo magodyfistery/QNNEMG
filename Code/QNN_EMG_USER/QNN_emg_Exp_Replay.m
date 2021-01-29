@@ -50,7 +50,7 @@ assignin('base','s2', model_name);
 s = "QNN_Trained_Model_" + model_name + ".mat";
     
 % parameters for data/signals of users
-RepTraining = 1;       % uo to 125 numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
+RepTraining = 50;       % uo to 125 numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
 rangeDown=26;  %limite inferior de rango de muestras a leer
 assignin('base','rangeDown', rangeDown); 
 
@@ -74,9 +74,7 @@ assignin('base','rangeValues', 150);  %up to 300 - rango de muestras PERMITIDO q
 %   (nogestures if actived), fist, open, pinch, wave in, wave out, etc
 assignin('base','packetEMG',     on); 
 
-% Code_0 preprocess the emg data and correct, choosing the order of the
-% gestures to be read too. Also, generates other relevant variables
-Code_0(rangeDown);
+
 
 
 % Parameters
@@ -90,25 +88,49 @@ qnnOption = QNNOption(params.typeWorld, numNeuronsLayers, transferFunctions, ...
                 params.momentum, params.initialMomentum, ...
                 params.miniBatchSize, params.W, params.gamma, params.epsilon);
 
+            
 qnn = QNN(qnnOption, params.rewardType, RepTraining);
 
 
 
+numEpochs = 20;
+
 tStart = tic;
-[weights, summary] = qnn.train(verbose_level-1);
+
+mean_acuracy_by_epoch = zeros(1, numEpochs);
+
+for epoch=1:numEpochs
+    % Code_0 preprocess the emg data and correct, choosing the order of the
+    % gestures to be read too. Also, generates other relevant variables
+    Code_0(rangeDown);
+    fprintf("****************\nEpoch: %d of %d\n***************\n", epoch, numEpochs);
+    [weights, summary, accuracy_by_episode] = qnn.train(verbose_level-1);
+    % plot(1:length(accuracy(1,:)),accuracy(1,:));
+    mean_acuracy_by_epoch(1, epoch) = mean(accuracy_by_episode);
+end
+
 elapsedTimeHours = toc(tStart)/3600;
+
+
 fprintf('\n Elapsed time for training: %3.3f h \n', elapsedTimeHours);
+
+
+plot(1:length(mean_acuracy_by_epoch),mean_acuracy_by_epoch);
+
+options.reluThresh = qnn.qnnOption.reluThresh;
+options.lambda = qnn.qnnOption.lambda;
 
 model_dir = strcat("results/models/", s);
 save(model_dir,'weights', 'numNeuronsLayers',...
-    'transferFunctions', 'options', 'typeWorld', 'flagDisplayWorld');
+    'transferFunctions', 'options', 'typeWorld');
 
-
+%{
 training_accuracy = summary(2)/(summary(2) + summary(5)) + summary(3)/(summary(3) + summary(6));
 
 tStart = tic;
 test_accuracy = qnn.test(139, verbose_level-1);
 elapsedTimeHours = toc(tStart)/3600;
 fprintf('Elapsed time for testing: %3.3f h \n', elapsedTimeHours);
+%}
 end
 

@@ -14,10 +14,10 @@ params.typeWorld = 'randWorld'; % Type of the world of the game: deterministic, 
 
 params.rewardType = 1;
 
-window_size = 300;
-stride = 200;  % jump between windows
+window_size = 230;
+stride = 40;  % jump between windows
 
-verbose_level = 10;
+verbose_level = 2;
 model_name = "just_testing";
 
 [training_accuracy, test_accuracy] = QNN_emg_Exp_Replay(params, window_size, stride, model_name, verbose_level);

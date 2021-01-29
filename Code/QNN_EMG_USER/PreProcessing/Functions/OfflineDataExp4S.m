@@ -127,7 +127,7 @@ if userIndex~=dataPacketSize+1
         JP_Longitud=length(emgData);
         assignin('base','JP_Longitud', JP_Longitud);
 
-        if endWave > length(emgData)% - Stride %*********************
+        if endWave + Stride > length(emgData) %*********************
             %endWave     = length(emgData); %<**********************
             %startWave   = endWave-timeWindow*200; %****************
             controlExit = true;
