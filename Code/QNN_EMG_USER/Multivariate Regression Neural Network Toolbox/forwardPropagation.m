@@ -60,6 +60,8 @@ for i = 2:numLayers
             A{i} = [vectorOnes bsxfun(@max, Z{i}, reluThresh)];
         case 'tanh'
             A{i} = [vectorOnes tansig(Z{i})];
+        case 'sigmoid'
+            A{i} = [vectorOnes sigmoid(Z{i})];
         case 'purelin'
             A{i} = [vectorOnes Z{i}];
         case 'softplus'

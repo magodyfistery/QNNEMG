@@ -109,6 +109,8 @@ for i = (numLayers - 1):-1:1
                 df_dz = Z{i + 1} > reluThresh;
             case 'tanh'
                 df_dz = 1 - tansig(Z{i + 1}).^2;
+            case 'sigmoid'
+                df_dz = sigmoidGradient(Z{i + 1});
             case 'purelin'
                 df_dz = ones( size(Z{i + 1}) );
             case 'softplus'

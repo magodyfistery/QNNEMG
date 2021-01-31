@@ -4,7 +4,7 @@ classdef QNNOption < handle
         % default values
         typeWorld = 'randWorld';  % Type of the world of the game: deterministic, randAgent, and randWord
         numNeuronsLayers = [40, 80, 30, 6];
-        transferFunctions = {'none', 'relu', 'relu', 'purelin'};
+        transferFunctions = {'none', 'sigmoid', 'sigmoid', 'sigmoid'};
         reluThresh = 0;  % ????  %% ITS NOT PARAMETICED
         lambda = 0;  % regularization term
         
@@ -28,6 +28,8 @@ classdef QNNOption < handle
     end
     
     methods
+        
+        
         function obj = QNNOption(typeWorld, numNeuronsLayers, transferFunctions, ...
                 lambda, learningRate, numEpochsToIncreaseMomentum, ...
                 momentum, initialMomentum, ...

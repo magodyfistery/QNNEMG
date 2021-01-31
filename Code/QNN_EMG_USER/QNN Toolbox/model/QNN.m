@@ -2,7 +2,6 @@ classdef QNN < handle
     
     properties
         qnnOption;
-        alpha;  % learning rate that change
         Reward_type;  % on si quiero recompensa -1 x ventana (clasif) y -10 x recog
         amount_reward_correct = 1;
         amount_reward_incorrect = -1;
@@ -17,19 +16,21 @@ classdef QNN < handle
         % each state is a numeric value is scalar
         gameReplay;
         total_num_windows_predicted = 0;
+        known = 0;
+        dont_known = 0;
+        
+        training_cost = [];
     end
     
     methods
         function obj = QNN(qnnOption, Reward_type, number_gestures_taken_from_user)
             %QNN Construct an instance of this class
             obj.qnnOption = qnnOption;
-            obj.alpha = qnnOption.learningRate;
             
             obj.Reward_type = Reward_type;
             obj.number_gestures_taken_from_user = number_gestures_taken_from_user;
-            obj.theta = randInitializeWeights(qnnOption.numNeuronsLayers);
             % Experience replay initialization ------------------------------
-            obj.exp_replay_lengthBuffer = ceil(3*qnnOption.miniBatchSize);  % ???? por qué 3
+            obj.exp_replay_lengthBuffer = ceil(10*qnnOption.miniBatchSize);  % space for experiences 10 times more than the miniBatchSize used for training
             s  =  nan(obj.exp_replay_lengthBuffer, 40);  % 1 for optimization
             % sp =  nan(obj.exp_replay_lengthBuffer, 1);
             a  =  nan(obj.exp_replay_lengthBuffer, 1);
@@ -39,8 +40,12 @@ classdef QNN < handle
             
         end
         
-        function [weights, summary, accuracy_by_episode] = train(this, verbose_level)
-            summary = [];
+        function initTheta(this, theta)
+            this.theta = theta;
+        end
+        
+        function [summary, accuracy_by_episode] = train(this, verbose_level)
+            
             EMG_window_size = evalin('base', 'WindowsSize');                                                %AQUI PONER WINDOW SIZE
             Stride = evalin('base', 'Stride');
             
@@ -55,14 +60,10 @@ classdef QNN < handle
             % in QNN each gesture/"epoch" can be interpreted as an episode of num_windows
             repTotalTraining  = this.number_gestures_taken_from_user*(dataPacketSize-2);  % is the same of repTotalTraining
             
-            
-            
-            % Setup for momentum update of the weights of the ANN
-            momentum = this.qnnOption.initialMomentum;
-            velocity = zeros( size(this.theta) );
-            
-            % Training the ANN
-            cost = zeros(1, repTotalTraining);
+            wins_episodes = 0;
+            losses_episodes = 0;
+            wins_clasification_with_mode = 0;
+            losses_clasification_with_mode = 0;
             wins_by_episode = zeros(dataPacketSize-2, this.number_gestures_taken_from_user);
             loses_by_episode = zeros(dataPacketSize-2, this.number_gestures_taken_from_user);
             
@@ -93,7 +94,7 @@ classdef QNN < handle
                 for episode=1:this.number_gestures_taken_from_user
                     
                     if mod(episode, debug_step) == 0 && verbose_level >= 1 || episode == 1 || episode == this.number_gestures_taken_from_user
-                        fprintf("User: %s, Episode(Gesture) %d of %d\n", userData.userInfo.name, episode, this.number_gestures_taken_from_user);
+                        fprintf("TRAINING| User: %s, Episode(Gesture) %d of %d\n", userData.userInfo.name, episode, this.number_gestures_taken_from_user);
                     end
                    
                     
@@ -105,49 +106,39 @@ classdef QNN < handle
                     
                     [count_wins_in_episode, episode_won, class_mode] = ...
                         this.executeEpisode(num_windows, orientation, dataPacketSize, ...
-                                            repTotalTraining, EMG_window_size, Stride, ...
+                                            this.number_gestures_taken_from_user, repTotalTraining, EMG_window_size, Stride, ...
                                             groundTruthIndex, gestureName, ...
-                                            verbose_level-1);
+                                            verbose_level-1, false);
                                         
                     wins_by_episode(data_user, episode) = count_wins_in_episode;
                     loses_by_episode(data_user, episode) = num_windows-count_wins_in_episode;
+                    wins_clasification_with_mode = wins_clasification_with_mode + (class_mode == gestureName);
+                    losses_clasification_with_mode = losses_clasification_with_mode + (class_mode ~= gestureName);
+                    wins_episodes = wins_episodes + episode_won;
+                    losses_episodes = losses_episodes + ~episode_won;
                     
-                    % this variable is a reference for the exp replay buffer
-                    this.total_num_windows_predicted = this.total_num_windows_predicted + num_windows;
-
+                    % this.updateEpsilon(data_user, dataPacketSize-2, episode, this.number_gestures_taken_from_user)
                     
-                    % ???????????????????
-                    numTestingSamples = max(0.1*num_windows, 20);  % numTestingSamples = max(0.1*numStates, 20);   ????????
-                    testStates = zeros(numTestingSamples, 40);
-                    % Sampling randomly the data from the experience replay buffer
-                    [test_Qval] =  this.sampleRandomFromExpReplay(testStates, episode, momentum, velocity, cost, repTotalTraining);
-                    % averageMaxQvalue(episode) = mean( max(test_Qval, [], 2) );
-                    this.updateEpsilon(data_user, dataPacketSize-2, episode, this.number_gestures_taken_from_user)
                     
+                   
                     
                     
                 end
                 
             end
             
-            weights = reshapeWeights(this.theta, this.qnnOption.numNeuronsLayers);  
-
-            %{
-            figure(1);
-            subplot(1,3,1);
-            plot(1:length(wins_by_episode(1,:)),wins_by_episode(1,:));
-            subplot(1,3,2);
-            plot(1:length(loses_by_episode(1,:)),loses_by_episode(1,:));
-            subplot(1,3,3);
-            %}
             accuracy_by_episode = wins_by_episode(1,:)./(wins_by_episode(1,:) + loses_by_episode(1,:));
+            
+            summary = [wins_episodes, wins_clasification_with_mode, sum(sum(wins_by_episode)), ...
+                       losses_episodes, losses_clasification_with_mode, sum(sum(loses_by_episode))];
+            
             
         end
         
         function [count_wins_in_episode, episode_won, class_mode] = executeEpisode(this, num_windows, orientation, dataPacketSize, ...
-                                repTotalTraining, EMG_window_size, Stride, ...
+                                number_gestures_taken_from_user, repTotalTraining, EMG_window_size, Stride, ...
                                 groundTruthIndex, gestureName, ...
-                                verbose_level)
+                                verbose_level, is_test)
             % -----  El juego del episodio viene a ser el barrido de ventanas en una muestra EMG
             % ----- Se gana el juego si el resultado de reconocimiento es correctom
             % ----- sino se pierde el juego y se tiene una penalizacion
@@ -190,7 +181,7 @@ classdef QNN < handle
                 
                 %Leo datos de muestras
                 [~,~,Features_GT,Tiempos_GT,Puntos_GT, ~, ~, ~, groundTruth_GT] = ...
-                    Code_1(orientation,dataPacketSize, this.number_gestures_taken_from_user, repTotalTraining, verbose_level-1);
+                    Code_1(orientation,dataPacketSize, number_gestures_taken_from_user, repTotalTraining, verbose_level-1);
 
                 Vector_EMG_Tiempos_GT(1,window_n)=Tiempos_GT;      %copio primer valor en vector de tiempos de gt
                 Vector_EMG_Puntos_GT(1,window_n)=Puntos_GT;        %copio primer valor en vector de tiempos de gt
@@ -202,7 +193,7 @@ classdef QNN < handle
                 
                 
                 
-                [Qval, action] = this.selectAction(state);
+                [~, action] = this.selectAction(state, is_test);
                 
                 % AQUI SE VAN GUARDADNO LAS ACCIONES PREDICHAS DENTRO DEl vector de UNA EPOCA
                 acciones_predichas_vector(window_n,1)=action;
@@ -211,7 +202,7 @@ classdef QNN < handle
                 
                 real_action=gt_gestures_labels_num(window_n);
                 
-                [reward, new_state] = this.applyActionAndGetReward(action, real_action, this.Reward_type, state);
+                [reward, ~] = this.applyActionAndGetReward(action, real_action, this.Reward_type, state);
                 
                 if reward == this.amount_reward_correct
                     count_wins_in_episode = count_wins_in_episode + 1;
@@ -221,15 +212,20 @@ classdef QNN < handle
                     fprintf("reward for state %d of %d in actual episode = %d\n", window_n, num_windows, reward);
                 end
                 
-                %---- Experience replay storage ------------------------------------
-                idx = mod(this.total_num_windows_predicted + window_n, this.exp_replay_lengthBuffer);
-                if idx == 0
-                    idx = this.exp_replay_lengthBuffer;
-                end
-                % the rows of game Replay are 3*minBatchSize
-                this.gameReplay(idx, :) = [state, action, reward];   %[state(:)', action, reward, new_state(:)'];
-                %---------------------------------------------------------------
+                if ~is_test
+                    %---- Experience replay storage ------------------------------------
+                    this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
+                    idx = mod(this.total_num_windows_predicted, this.exp_replay_lengthBuffer);
+                    if idx == 0
+                        idx = this.exp_replay_lengthBuffer;
+                    end
 
+                    this.gameReplay(idx, :) = [state, action, reward];   %[state(:)', action, reward, new_state(:)'];
+                    % this variable is a reference for the exp replay buffer
+
+                    this.learnFromExperienceReplay();
+                    %---------------------------------------------------------------
+                end
                 %Acondicionar vectores - si el signo anterior no es igual al signo acual entocnes mido tiempo
                 if window_n > 1 && ...
                         etiquetas_labels_predichas_vector(window_n,1) ~= etiquetas_labels_predichas_vector(window_n-1,1)
@@ -257,7 +253,6 @@ classdef QNN < handle
 
                 end
                                 
-                % state = new_state;
             end
             
             [reward_for_recognition, class_mode] = this.getRewardForRecognition(...
@@ -275,37 +270,31 @@ classdef QNN < handle
             
         end
         
-        function updateEpsilon(this, actual_user, total_users, episode, total_episodes)
+        function updateEpsilon(this, ~, ~, ~, ~)
             % OENDING: test other epsilon: Annealing the epsilon
             if this.qnnOption.epsilon > 0.10
-                this.qnnOption.epsilon = 0.2; %epsilon0*exp(-7*epoch/numEpochs);
+                this.qnnOption.epsilon = 0.1; %epsilon0*exp(-7*epoch/numEpochs);
             end
         end
         
-        function [Qval, action_index] = selectAction(this, state)
-            % Reshaping the weights of the ANN
-            weights = reshapeWeights(this.theta, this.qnnOption.numNeuronsLayers);        % Reshaping the weights of the ANN (verificar shape)
-
-            % Predicting the response of the ANN for the current state
-            options.reluThresh = this.qnnOption.reluThresh;
+        function [Qval, action_index] = selectAction(this, state, is_test)
             
-            [~, A] = forwardPropagation(state, weights,...     % ANN to obtain update weights - state is a vector
-                        this.qnnOption.transferFunctions, options);
+            Qval = this.feedForward(state); % 6 Valores de Q - uno por cada accion
 
-            Qval = A{end}(:, 2:end);                                  % 6 Valores de Q - uno por cada accion
+            [~, idx] = max(Qval); % obtengo indice de Qmax a partir de vector Qval
 
-            [~, idx] = max(Qval);                              % obtengo indice de Qmax a partir de vector Qval
+            if ~is_test
+                % Epsilon-greedy action selection - REV Con epsilon=1
+                % Inicialmente hace solo exploracion, luego el valor de epsilon se va reduciendo a medida que tengo mas informacion
+                % Si rand <= epsilon, obtengo un Q de manera aleatoria, el cual será diferente a Qmax (exploracion)
 
-
-            % Epsilon-greedy action selection - REV Con epsilon=1
-            % Inicialmente hace solo exploracion, luego el valor de epsilon se va reduciendo a medida que tengo mas informacion
-            % Si rand <= epsilon, obtengo un Q de manera aleatoria, el cual será diferente a Qmax (exploracion)
-
-            if rand <= this.qnnOption.epsilon            % siempre se cumple con epsilon=1% %Initial value of epsilon for the epsilon-greedy exploration
-                full_action_list = 1:6;    %actionList = 1:6;               % posibles acciones  (AQUI HAY QUE CAMBIAR - #clases) usar gestos
-                actionList = full_action_list(full_action_list ~= idx);           %  Crea lista con las acciones q no tienen Qmax
-                idx_valid_action = randi([1 length(actionList)]);
-                idx = full_action_list(actionList(idx_valid_action));
+            
+                if rand <= this.qnnOption.epsilon            % siempre se cumple con epsilon=1% %Initial value of epsilon for the epsilon-greedy exploration
+                    full_action_list = 1:6;    %actionList = 1:6;               % posibles acciones  (AQUI HAY QUE CAMBIAR - #clases) usar gestos
+                    actionList = full_action_list(full_action_list ~= idx);           %  Crea lista con las acciones q no tienen Qmax
+                    idx_valid_action = randi([1 length(actionList)]);
+                    idx = full_action_list(actionList(idx_valid_action));
+                end
             end
 
             % - Predigo accion en base a Epsilon-Greedy
@@ -326,8 +315,9 @@ classdef QNN < handle
             end
             
             %%%% PENDING: HERE goES ThE fUNCTION FOR CHANGING THE STATE
+            % in this problem of MDP its not necesary a new state
             % in this first approach is a value in numeric axis x <-|->
-            new_state = -1; % state+reward;
+            new_state = state; % state+reward;
             
         end
         
@@ -374,7 +364,9 @@ classdef QNN < handle
             try
                 r1 = evalRecognition(repInfo, response);
             catch
+                %PENDING DEPURAR PORQUE PASA ESTO
                 disp('EL vector de predicciones esta compuesto por una misma etiqueta -> Func Eval Recog no funciona');
+
                 r1.recogResult=0;
                 if gestureName_GT==response.class
                     r1.classResult=1;
@@ -391,95 +383,268 @@ classdef QNN < handle
             end
         end
         
-        function test_Qval = sampleRandomFromExpReplay(this, testStates, episode, momentum, velocity, cost, ...
-                repTotalTraining)
+        
             
+        function learnFromExperienceReplay(this)
             
-            weights = reshapeWeights(this.theta, this.qnnOption.numNeuronsLayers);  
-            options.reluThresh = this.qnnOption.reluThresh;
-            options.lambda = this.qnnOption.lambda;
+            sum_cost = 0;
+            
+            amount_data_not_NAN =  this.exp_replay_lengthBuffer;
             
             % this wait until de experience_replay is full
-            if this.total_num_windows_predicted > ceil( 1.05*this.exp_replay_lengthBuffer )
-                
-                [~, idx] = sort(rand(this.exp_replay_lengthBuffer, 1));
-                randIdx = idx(1:this.qnnOption.miniBatchSize);
-                dataX = zeros(this.qnnOption.miniBatchSize, 40);  %64
-                dataY = zeros(this.qnnOption.miniBatchSize, 6);
-                
-                % Computations for the minibatch
-                for numExample = 1:this.qnnOption.miniBatchSize
-                    % Getting the value of Q(s, a)
-                    old_state_er = this.gameReplay(randIdx(numExample), 1:40); %64
-                    [~, A] = forwardPropagation(old_state_er, weights,... %old_state_er(:)'
-                        this.qnnOption.transferFunctions, options);
-                    
-                    old_Qval_er = A{end}(:, 2:end);
-                    
-                    % Getting the value of max_a_Q(s',a')
-                    % ????????????????
-%                     new_state_er = this.gameReplay(randIdx(numExample), (end - 39):end);  %63
-%                     [~, A] = forwardPropagation(new_state_er, weights,... %new_state_er(:)'
-%                         transferFunctions, options);
-%                     new_Qval_er = A{end}(:, 2:end);
-%                     maxQval_er = max(new_Qval_er);
-
-                    maxQval_er = max(old_Qval_er);  %% PENDING: uso el mismo estado como siguiente
-                    action_er = this.gameReplay(randIdx(numExample), 41);           %65
-                    reward_er = this.gameReplay(randIdx(numExample), 42);           %66
-                    
-                    if this.Reward_type == 1
-
-                        if reward_er <= -1  %PENDING       OJO CON ESTE
-                            % Non-terminal state
-                            update_er = reward_er + this.qnnOption.gamma*maxQval_er;
-                        else
-                            % Terminal state
-                            update_er = reward_er;
-                        end
-                    else
-
-                        if reward_er == 0  %-1       OJO CON ESTE
-                            % Non-terminal state
-                            update_er = reward_er + gamma*maxQval_er;
-                        else
-                            % Terminal state
-                            update_er = reward_er;
-                        end
-                    end
-
-
-                    % Data for training the ANN
-                    dataX(numExample, :) = old_state_er;  %old_state_er(:)'
-                    dataY(numExample, :) = old_Qval_er;
-                    dataY(numExample, action_er) = update_er;
-                end
-                % Updating the weights of the ANN
-                [cost(episode), gradient] = regressionNNCostFunction(dataX, dataY,...
-                    this.qnnOption.numNeuronsLayers,...
-                    this.theta,...
-                    this.qnnOption.transferFunctions,...
-                    options);
-                % Increase momentum after momIncrease iterations
-                % PENDING
-                if this.total_num_windows_predicted == this.qnnOption.numEpochsToIncreaseMomentum
-                    momentum = options.momentum;
-                end
-                velocity = momentum*velocity + this.alpha*gradient;
-                this.theta = this.theta - velocity;
-                % Annealing the learning rate
-                this.alpha = this.qnnOption.learningRate*exp(-5*this.total_num_windows_predicted/repTotalTraining);
+            if this.total_num_windows_predicted < this.exp_replay_lengthBuffer
+                amount_data_not_NAN = this.total_num_windows_predicted;
             end
-            [~, A] = forwardPropagation(testStates, weights, this.qnnOption.transferFunctions, options);
-            test_Qval = A{end}(:, 2:end);
+            
+            actual_batch_size = min(this.qnnOption.miniBatchSize, amount_data_not_NAN);
+            
+            [~, idx] = sort(rand(amount_data_not_NAN, 1));
+            randIdx = idx(1:actual_batch_size);
+
+            % Computations for the minibatch
+            for numExample=1:actual_batch_size
+
+                % Getting the value of Q(s, a)
+                experience_replay_state = this.gameReplay(randIdx(numExample), 1:40);
+                experience_replay_action = this.gameReplay(randIdx(numExample), 41);
+                experience_replay_reward = this.gameReplay(randIdx(numExample), 42);
+
+
+                q_sp_a = experience_replay_action;
+
+                if experience_replay_reward > 0
+                    % Getting the value of Q(s', a)
+                    % i know the prediction was correct
+                    is_custom_sparsed = false;
+                    this.known = this.known + 1;
+                else
+                    % i dont know what gesture is
+                    is_custom_sparsed = true;
+                    this.dont_known = this.dont_known + 1;
+                end
+
+                % Data for training the ANN
+                % Updating the weights of the ANN
+                [gradient, cost] = this.calculateGradientForOneObservation(experience_replay_state, q_sp_a, is_custom_sparsed);
+                this.theta = this.theta - (this.qnnOption.learningRate * gradient);
+                
+                % taking cost of each update
+                this.training_cost = [this.training_cost cost];
+                
+
+            end
+            
         end
         
-        
-        function [summary] = test(this, rangeDown, verbose_level)
-            disp("Beginning testing");
-            summary = 1:6;
+        function output_nn = feedForward(this, X)
+            % returns the output of neural network
+            
+            m = size(X, 1);
+            number_layers = size(this.qnnOption.numNeuronsLayers, 2);
+            index_reshape_begin = 1;
+            index_reshape_end = 0;
+            a = [ones(m, 1) X];
+            
+            for i=1:number_layers-1
+                index_reshape_end = index_reshape_end + (this.qnnOption.numNeuronsLayers(i)+1)*this.qnnOption.numNeuronsLayers(i+1);
+                weights = reshape(this.theta(index_reshape_begin:index_reshape_end), (this.qnnOption.numNeuronsLayers(i)+1), this.qnnOption.numNeuronsLayers(i+1));
+
+                z = a * weights;
+                switch(this.qnnOption.transferFunctions{i+1})
+                    case "sigmoid"
+                        a = [ones(m, 1) sigmoid(z)];
+                    otherwise
+                        disp("Error, the transfer function is not supported");
+                        a = [ones(m, 1) sigmoid(z)];
+                end
+                index_reshape_begin = index_reshape_end + 1;
+            end
+            
+            output_nn = a(:, 2:end);
         end
-        
+
+        function [gradient, cost] = calculateGradientForOneObservation(this, X, y, is_custom_sparse_y)
+
+            % X es solo un ejemplo
+            m = size(X, 1);
+            number_layers = size(this.qnnOption.numNeuronsLayers, 2);
+            
+            %%% Feed Forward
+            index_reshape_begin = 1;
+            index_reshape_end = 0;
+            indexes_reshapes_theta = zeros(number_layers-1, 2);
+
+            a = [ones(m,1) X];
+            activations_functions = zeros(sum(this.qnnOption.numNeuronsLayers)+number_layers-1, 1);
+            activations_derivates_functions = zeros(sum(this.qnnOption.numNeuronsLayers)+number_layers-1, 1);
+
+            indexes_activations_functions = zeros(number_layers, 2);  % 2 por ser inicio y fin
+            index_activations_begin = 1;
+            index_activations_end = this.qnnOption.numNeuronsLayers(1)+1;
+
+            activations_functions(index_activations_begin:index_activations_end, 1) = a(:);
+            indexes_activations_functions(1, :) = [index_activations_begin index_activations_end];
+
+            index_activations_begin = index_activations_end+1;
+
+
+
+            for i=1:number_layers-1
+                index_reshape_end = index_reshape_end + (this.qnnOption.numNeuronsLayers(i)+1)*this.qnnOption.numNeuronsLayers(i+1);
+                weights = reshape(this.theta(index_reshape_begin:index_reshape_end), (this.qnnOption.numNeuronsLayers(i)+1), this.qnnOption.numNeuronsLayers(i+1));
+
+
+                z = a * weights;
+                switch(this.qnnOption.transferFunctions{i+1})
+                    case "sigmoid"
+                        a = [ones(1,1) sigmoid(z)];
+                        a_derivate = [ones(1,1) sigmoidGradient(z)];
+                    otherwise
+                        disp("Error, the transfer function is not supported");
+                        a = [ones(1,1) sigmoid(z)];
+                        a_derivate = [ones(1,1) sigmoidGradient(z)];
+                end
+
+                index_activations_end = index_activations_end + this.qnnOption.numNeuronsLayers(i+1)+1;
+
+                activations_functions(index_activations_begin:index_activations_end, 1) = a(:);
+                activations_derivates_functions(index_activations_begin:index_activations_end, 1) = a_derivate(:);
+
+                indexes_reshapes_theta(i, :) = [index_reshape_begin index_reshape_end];
+                indexes_activations_functions(i+1, :) = [index_activations_begin index_activations_end];
+
+
+
+                index_reshape_begin = index_reshape_end + 1;
+                index_activations_begin = index_activations_end+1;
+            end
+
+            gradient = zeros(size(this.theta));
+
+            
+            % Backpropagation
+            ind = indexes_activations_functions(number_layers, :);
+            % la ultima capa de activación no requiere el uno agregado del bias
+            h_t = activations_functions(ind(1):ind(2));
+            h = h_t(2:end)';  % ignora el bias
+            
+            
+            % hipotesis es a, la respuesta correcta es y (hot encoded)
+            if is_custom_sparse_y
+                sparse_y = a(2:end);
+                sparse_y(y) = 0;
+                % INVERSE sparse. [1 1 1 0 1 1]
+                % sparse_y = sparse_one_hot_encoding(-y, this.qnnOption.numNeuronsLayers(number_layers));
+            else
+                sparse_y = sparse_one_hot_encoding(y, this.qnnOption.numNeuronsLayers(number_layers));
+            end
+
+            % sum(m x num_labels) => 1 x num_labels; sum(1 x num_labels) => 1x1
+            % PENDING regulariztion
+            regularization = 0; % (lambda/(2*m)) * (sum(sum( Theta1(:, 2:end) .^ 2 )) + sum(sum( Theta2(:, 2:end) .^ 2 )));
+
+            cost = sum(sum( -sparse_y .* log(a(2:end)) - (1 - sparse_y) .* log(1 - a(2:end))))/m + regularization;
+            
+%             if cost > 4
+%                disp("Why?"); 
+%             end
+                
+            delta = h - sparse_y;
+            
+            
+            
+            
+            
+
+            i=number_layers-1;
+
+            while i >= 1
+                ind = indexes_activations_functions(i, :);
+                ind_theta = indexes_reshapes_theta(i, :);
+                a = activations_functions(ind(1):ind(2))';  % se requiere el bias
+                a_d = activations_derivates_functions(ind(1):ind(2));
+                a_derivate = a_d(2:end)';
+                theta_t = reshape(this.theta(ind_theta(1):ind_theta(2)), this.qnnOption.numNeuronsLayers(i)+1, this.qnnOption.numNeuronsLayers(i+1));
+
+                weights = theta_t(2:end,:)';
+                
+                % delta
+                grad = zeros(size(weights, 1), size(weights, 2) + 1);
+                grad = (grad + delta' * a)';
+
+                gradient(ind_theta(1):ind_theta(2), 1) = grad(:);
+                if i > 1
+                  delta = (delta * weights) .* a_derivate;
+                end
+                i = i - 1;
+
+            end
+            
+        end
+
+
+        function [summary, accuracy_by_episode] = test(this, verbose_level, num_gestures_validation)
+            EMG_window_size = evalin('base', 'WindowsSize');                                                %AQUI PONER WINDOW SIZE
+            Stride = evalin('base', 'Stride');
+            orientation      = evalin('base', 'orientation');
+            dataPacketSize     = evalin('base', 'dataPacketSize');
+            repTotalTraining  = num_gestures_validation*(dataPacketSize-2);  % is the same of repTotalTraining
+            wins_episodes = 0;
+            losses_episodes = 0;
+            wins_clasification_with_mode = 0;
+            losses_clasification_with_mode = 0;
+            wins_by_episode = zeros(dataPacketSize-2, num_gestures_validation);
+            loses_by_episode = zeros(dataPacketSize-2, num_gestures_validation);
+            
+            
+            debug_step = ceil(num_gestures_validation/5); %%% Just for debugging
+            dataPacket = evalin('base','dataPacket');
+            % for each user in Specific
+            for data_user=1:dataPacketSize-2
+                userIndex   = evalin('base', 'userIndex');
+                userData = loadSpecificUser(dataPacket, userIndex);
+                energy_index = strcmp(orientation(:,1), userData.userInfo.name);
+                rand_data=orientation{energy_index,6};
+                
+                for episode=1:num_gestures_validation
+                    
+                    if mod(episode, debug_step) == 0 && verbose_level >= 1 || episode == 1 || episode == num_gestures_validation
+                        fprintf("TESTING| User: %s, Episode(Gesture) %d of %d\n", userData.userInfo.name, episode, num_gestures_validation);
+                    end
+                   
+                    
+                    emgRepetition = evalin('base','emgRepetition');
+                    numberPointsEmgData = length(userData.training{rand_data(emgRepetition),1}.emg);
+                    num_windows = getNumberWindows(numberPointsEmgData, EMG_window_size, Stride, false);
+                    groundTruthIndex = userData.training{rand_data(emgRepetition),1}.groundTruthIndex;
+                    gestureName = userData.training{rand_data(emgRepetition),1}.gestureName;
+                    
+                    [count_wins_in_episode, episode_won, class_mode] = ...
+                        this.executeEpisode(num_windows, orientation, dataPacketSize, ...
+                                            num_gestures_validation, repTotalTraining, EMG_window_size, Stride, ...
+                                            groundTruthIndex, gestureName, ...
+                                            verbose_level-1, true);
+                                        
+                                        
+                                        
+                    wins_by_episode(data_user, episode) = count_wins_in_episode;
+                    loses_by_episode(data_user, episode) = num_windows-count_wins_in_episode;
+                    wins_clasification_with_mode = wins_clasification_with_mode + (class_mode == gestureName);
+                    losses_clasification_with_mode = losses_clasification_with_mode + (class_mode ~= gestureName);
+                    wins_episodes = wins_episodes + episode_won;
+                    losses_episodes = losses_episodes + ~episode_won;                   
+                    
+                end
+                
+            end
+            
+            accuracy_by_episode = wins_by_episode(1,:)./(wins_by_episode(1,:) + loses_by_episode(1,:));
+            summary = [wins_episodes, wins_clasification_with_mode, sum(sum(wins_by_episode)), ...
+                       losses_episodes, losses_clasification_with_mode, sum(sum(loses_by_episode))];
+            
+            
+        end
+
         
     end
     
