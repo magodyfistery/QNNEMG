@@ -1,5 +1,5 @@
-function [training_accuracy, test_accuracy] = QNN_emg_Exp_Replay(...
-    params, emg_window_size, emg_stride, model_name, verbose_level)
+function [training_accuracy, test_accuracy, qnn] = QNN_emg_Exp_Replay(...
+    params, emg_window_size, emg_stride, model_name, verbose_level, RepTraining, repTrainingForTesting)
 %{
 qnnOption: QNNOption {
     params.typeWorld;
@@ -16,7 +16,9 @@ qnnOption: QNNOption {
 }
 verbose_level: int -> 0=no show messages, 1=show messages from first script
     level, 2=show messages from first to second script level...
-%}
+RepTraining = 10;       % uo to 125 numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
+repTrainingForTesting = 5;
+    %}
 
 % Paths to other codes
 addpath('Multivariate Regression Neural Network Toolbox');
@@ -44,13 +46,8 @@ else
     % Data conversion needed
     jsontomat;
 end
-
-% Variables for storing the results
-assignin('base','s2', model_name);    
-s = "QNN_Trained_Model_" + model_name + ".mat";
     
 % parameters for data/signals of users
-RepTraining = 10;       % uo to 125 numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
 rangeDown=26;  %limite inferior de rango de muestras a leer
 assignin('base','rangeDown', rangeDown); 
 
@@ -124,7 +121,6 @@ for epoch=1:numEpochs
     fprintf("Classif mode accuracy: %2.2f%%\n", classif_mode_ok_accuracy(1,epoch)); 
     fprintf("Wins in window accuracy: %2.2f%%\n", classif_by_window_accuracy(1,epoch)); 
     
-    
     figure(1);
     plot(1:length(accuracy_by_episode),accuracy_by_episode, 'b');
     
@@ -136,13 +132,11 @@ elapsedTimeHours = toc(tStart)/3600;
 fprintf('\nElapsed time for training: %3.3f h\n\n', elapsedTimeHours);
 
 training_accuracy = (mean(recognition_accuracy) + mean(classif_mode_ok_accuracy) + mean(classif_by_window_accuracy))/3;
-model_dir = strcat("results/models/", s);
-theta = qnn.theta;
-save(model_dir,'theta');
+
 
 tStart = tic;
 Code_0(rangeDown+RepTraining);
-[summary_test, accuracy_by_episode_test] = qnn.test(verbose_level-1, 13);
+[summary_test, accuracy_by_episode_test] = qnn.test(verbose_level-1, repTrainingForTesting);
 elapsedTimeHours = toc(tStart)/3600;
 fprintf('Elapsed time for testing: %3.3f h \n', elapsedTimeHours);
 

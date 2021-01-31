@@ -2,7 +2,7 @@ params.learningRate = 0.1;
 params.neurons_hidden1 = 80;
 params.neurons_hidden2 = 30;
 params.numEpochsToIncreaseMomentum = 50;
-params.miniBatchSize = 10;
+params.miniBatchSize = 25;
 params.lambda = 0;
 params.momentum = 0.9;
 params.initialMomentum = 0.3;
@@ -14,12 +14,21 @@ params.typeWorld = 'randWorld'; % Type of the world of the game: deterministic, 
 
 params.rewardType = 1;
 
-window_size = 200;
-stride = 20;  % jump between windows
+window_size = 250;
+stride = ceil(window_size/5);  % jump between windows
 
 verbose_level = 2;
 model_name = "just_testing";
 
-[training_accuracy, test_accuracy] = QNN_emg_Exp_Replay(params, window_size, stride, model_name, verbose_level);
+[training_accuracy, test_accuracy, qnn] = QNN_emg_Exp_Replay(..., 
+    params, window_size, stride, model_name, verbose_level, 100, 13);
 
 fprintf("\n\nTraining pond. accuracy: %2.2f, test pond. accuracy: %2.2f\n", training_accuracy, test_accuracy);
+
+theta = qnn.theta;
+experience_replay = qnn.gameReplay;
+total_num_windows_predicted = qnn.total_num_windows_predicted;
+save("theta.mat",'theta');
+save("experience_replay.mat",'experience_replay');
+save("total_num_windows_predicted.mat",'total_num_windows_predicted');
+clear all;

@@ -1,0 +1,3 @@
+Entrenamiento en paralelo
+algoritmos geneticos para el hiper-parámetros
+data augmentation

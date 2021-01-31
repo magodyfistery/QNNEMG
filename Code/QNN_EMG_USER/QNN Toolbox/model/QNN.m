@@ -1,5 +1,9 @@
 classdef QNN < handle
     
+    properties(Constant)
+       gesture_names = ["waveOut", "waveIn", "fist", "open", "pinch", "noGesture"]; 
+    end
+    
     properties
         qnnOption;
         Reward_type;  % on si quiero recompensa -1 x ventana (clasif) y -10 x recog
@@ -19,7 +23,13 @@ classdef QNN < handle
         known = 0;
         dont_known = 0;
         
+        num_correct_predictions = 0;
         training_cost = [];
+        
+        % auxiliar
+        index_gesture;
+        reserved_space_for_gesture; % reserved space for gesture in game replay
+        
     end
     
     methods
@@ -30,13 +40,15 @@ classdef QNN < handle
             obj.Reward_type = Reward_type;
             obj.number_gestures_taken_from_user = number_gestures_taken_from_user;
             % Experience replay initialization ------------------------------
-            obj.exp_replay_lengthBuffer = ceil(10*qnnOption.miniBatchSize);  % space for experiences 10 times more than the miniBatchSize used for training
+            obj.reserved_space_for_gesture = 20; % 3 * ceil(qnnOption.miniBatchSize/6);
+            obj.exp_replay_lengthBuffer = numel(QNN.gesture_names) * obj.reserved_space_for_gesture;
             s  =  nan(obj.exp_replay_lengthBuffer, 40);  % 1 for optimization
             % sp =  nan(obj.exp_replay_lengthBuffer, 1);
             a  =  nan(obj.exp_replay_lengthBuffer, 1);
             r  =  nan(obj.exp_replay_lengthBuffer, 1);
             obj.gameReplay = [s, a, r]; %(state, action, reward, state') , sp
             
+            obj.index_gesture = zeros(1, numel(QNN.gesture_names));
             
         end
         
@@ -129,6 +141,7 @@ classdef QNN < handle
             
             accuracy_by_episode = wins_by_episode(1,:)./(wins_by_episode(1,:) + loses_by_episode(1,:));
             
+            % END TRAINING
             summary = [wins_episodes, wins_clasification_with_mode, sum(sum(wins_by_episode)), ...
                        losses_episodes, losses_clasification_with_mode, sum(sum(loses_by_episode))];
             
@@ -213,19 +226,10 @@ classdef QNN < handle
                 end
                 
                 if ~is_test
-                    %---- Experience replay storage ------------------------------------
                     this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
-                    idx = mod(this.total_num_windows_predicted, this.exp_replay_lengthBuffer);
-                    if idx == 0
-                        idx = this.exp_replay_lengthBuffer;
-                    end
-
-                    this.gameReplay(idx, :) = [state, action, reward];   %[state(:)', action, reward, new_state(:)'];
-                    % this variable is a reference for the exp replay buffer
-
-                    this.learnFromExperienceReplay();
-                    %---------------------------------------------------------------
+                    this.updateWeigthsWithExperienceReplay(state, action, reward);
                 end
+                
                 %Acondicionar vectores - si el signo anterior no es igual al signo acual entocnes mido tiempo
                 if window_n > 1 && ...
                         etiquetas_labels_predichas_vector(window_n,1) ~= etiquetas_labels_predichas_vector(window_n-1,1)
@@ -384,31 +388,47 @@ classdef QNN < handle
         end
         
         
+        function updateWeigthsWithExperienceReplay(this, state, action, reward)
+                    
+            %---- Experience replay storage ------------------------------------
+            
+            if reward > 0
+                this.num_correct_predictions = this.num_correct_predictions + 1;
+                
+                this.index_gesture(action) = this.index_gesture(action) + 1;
+                index_experience_replay = mod(this.index_gesture(action), this.reserved_space_for_gesture);
+                if index_experience_replay == 0
+                    index_experience_replay = this.reserved_space_for_gesture;
+                end
+                
+                offset = (action-1) * this.reserved_space_for_gesture;
+                this.gameReplay(offset+index_experience_replay, :) = [state, action, reward];   %[state(:)', action, reward, new_state(:)'];
+
+            end
+            
+            this.learnFromExperienceReplay();
+        end
             
         function learnFromExperienceReplay(this)
             
-            sum_cost = 0;
             
-            amount_data_not_NAN =  this.exp_replay_lengthBuffer;
-            
-            % this wait until de experience_replay is full
-            if this.total_num_windows_predicted < this.exp_replay_lengthBuffer
-                amount_data_not_NAN = this.total_num_windows_predicted;
-            end
+            valid_replay = getRowsNotNan(this.gameReplay);
+            amount_data_not_NAN =  size(valid_replay, 1); % this.exp_replay_lengthBuffer;
             
             actual_batch_size = min(this.qnnOption.miniBatchSize, amount_data_not_NAN);
             
             [~, idx] = sort(rand(amount_data_not_NAN, 1));
             randIdx = idx(1:actual_batch_size);
+            
 
             % Computations for the minibatch
             for numExample=1:actual_batch_size
 
                 % Getting the value of Q(s, a)
-                experience_replay_state = this.gameReplay(randIdx(numExample), 1:40);
-                experience_replay_action = this.gameReplay(randIdx(numExample), 41);
-                experience_replay_reward = this.gameReplay(randIdx(numExample), 42);
-
+                
+                experience_replay_state = valid_replay(randIdx(numExample), 1:40);
+                experience_replay_action = valid_replay(randIdx(numExample), 41);
+                experience_replay_reward = valid_replay(randIdx(numExample), 42);
 
                 q_sp_a = experience_replay_action;
 
@@ -650,8 +670,7 @@ classdef QNN < handle
     
     methods(Static)
         function action_text = convertActionIndexToLabel(action)
-            gesture_names = ["waveOut", "waveIn", "fist", "open", "pinch", "noGesture"];
-            action_text = gesture_names(action);                
+            action_text = QNN.gesture_names(action);                
         end
         
         function gesture_mode = getModeOfGesturesWindowsPredicted(etiquetas_labels_predichas_vector, includeNoGesture)
