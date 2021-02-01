@@ -1,8 +1,9 @@
 params.learningRate = 0.1;
-params.neurons_hidden1 = 80;
-params.neurons_hidden2 = 30;
+params.neurons_hidden1 = 30;
+params.neurons_hidden2 = 10;
 params.numEpochsToIncreaseMomentum = 50;
 params.miniBatchSize = 25;
+params.reserved_space_for_gesture = 20;
 params.lambda = 0;
 params.momentum = 0.9;
 params.initialMomentum = 0.3;
@@ -21,9 +22,9 @@ verbose_level = 2;
 model_name = "just_testing";
 
 [training_accuracy, test_accuracy, qnn] = QNN_emg_Exp_Replay(..., 
-    params, window_size, stride, model_name, verbose_level, 100, 13);
+    params, window_size, stride, model_name, verbose_level, 5, 2);
 
-fprintf("\n\nTraining pond. accuracy: %2.2f, test pond. accuracy: %2.2f\n", training_accuracy, test_accuracy);
+% fprintf("\n\nTraining pond. accuracy: %2.2f, test pond. accuracy: %2.2f\n", training_accuracy, test_accuracy);
 
 theta = qnn.theta;
 experience_replay = qnn.gameReplay;

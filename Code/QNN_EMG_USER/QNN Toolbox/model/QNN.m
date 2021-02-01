@@ -33,14 +33,14 @@ classdef QNN < handle
     end
     
     methods
-        function obj = QNN(qnnOption, Reward_type, number_gestures_taken_from_user)
+        function obj = QNN(qnnOption, Reward_type, number_gestures_taken_from_user, reserved_space_for_gesture)
             %QNN Construct an instance of this class
             obj.qnnOption = qnnOption;
             
             obj.Reward_type = Reward_type;
             obj.number_gestures_taken_from_user = number_gestures_taken_from_user;
             % Experience replay initialization ------------------------------
-            obj.reserved_space_for_gesture = 20; % 3 * ceil(qnnOption.miniBatchSize/6);
+            obj.reserved_space_for_gesture = reserved_space_for_gesture; % 3 * ceil(qnnOption.miniBatchSize/6);
             obj.exp_replay_lengthBuffer = numel(QNN.gesture_names) * obj.reserved_space_for_gesture;
             s  =  nan(obj.exp_replay_lengthBuffer, 40);  % 1 for optimization
             % sp =  nan(obj.exp_replay_lengthBuffer, 1);
@@ -56,7 +56,8 @@ classdef QNN < handle
             this.theta = theta;
         end
         
-        function [summary, accuracy_by_episode] = train(this, verbose_level)
+        function [summary_episodes, summary_classifications_mode, ... 
+                wins_by_episode, loses_by_episode] = train(this, verbose_level)
             
             EMG_window_size = evalin('base', 'WindowsSize');                                                %AQUI PONER WINDOW SIZE
             Stride = evalin('base', 'Stride');
@@ -72,15 +73,17 @@ classdef QNN < handle
             % in QNN each gesture/"epoch" can be interpreted as an episode of num_windows
             repTotalTraining  = this.number_gestures_taken_from_user*(dataPacketSize-2);  % is the same of repTotalTraining
             
-            wins_episodes = 0;
-            losses_episodes = 0;
-            wins_clasification_with_mode = 0;
-            losses_clasification_with_mode = 0;
+            wins_episodes = zeros(1, dataPacketSize-2);
+            losses_episodes = zeros(1, dataPacketSize-2);
+            
+            wins_clasification_with_mode = zeros(1, dataPacketSize-2);
+            losses_clasification_with_mode = zeros(1, dataPacketSize-2);
+            
             wins_by_episode = zeros(dataPacketSize-2, this.number_gestures_taken_from_user);
             loses_by_episode = zeros(dataPacketSize-2, this.number_gestures_taken_from_user);
             
             
-            debug_step = ceil(this.number_gestures_taken_from_user/5); %%% Just for debugging
+            debug_step = ceil(this.number_gestures_taken_from_user/2); %%% Just for debugging
             
             dataPacket = evalin('base','dataPacket');
             
@@ -94,8 +97,8 @@ classdef QNN < handle
                 % testStates = zeros(numTestingSamples, 40);  % ???????????????????????????????????????
                 % etiquetas_labels_predichas_matrix=strings(num_windows,numEpochs);
             
-                userIndex   = evalin('base', 'userIndex');
-                userData = loadSpecificUser(dataPacket, userIndex);
+                assignin('base', 'userIndex', data_user+2);
+                userData = loadSpecificUser(dataPacket, data_user+2);
                 energy_index = strcmp(orientation(:,1), userData.userInfo.name);
                 rand_data=orientation{energy_index,6};
                 
@@ -106,10 +109,9 @@ classdef QNN < handle
                 for episode=1:this.number_gestures_taken_from_user
                     
                     if mod(episode, debug_step) == 0 && verbose_level >= 1 || episode == 1 || episode == this.number_gestures_taken_from_user
-                        fprintf("TRAINING| User: %s, Episode(Gesture) %d of %d\n", userData.userInfo.name, episode, this.number_gestures_taken_from_user);
+                        fprintf("TRAINING| User: %s (%d of %d), Episode(Gesture) %d of %d\n", userData.userInfo.name, data_user, dataPacketSize-2, episode, this.number_gestures_taken_from_user);
                     end
                    
-                    
                     emgRepetition = evalin('base','emgRepetition');
                     numberPointsEmgData = length(userData.training{rand_data(emgRepetition),1}.emg);
                     num_windows = getNumberWindows(numberPointsEmgData, EMG_window_size, Stride, false);
@@ -124,10 +126,12 @@ classdef QNN < handle
                                         
                     wins_by_episode(data_user, episode) = count_wins_in_episode;
                     loses_by_episode(data_user, episode) = num_windows-count_wins_in_episode;
-                    wins_clasification_with_mode = wins_clasification_with_mode + (class_mode == gestureName);
-                    losses_clasification_with_mode = losses_clasification_with_mode + (class_mode ~= gestureName);
-                    wins_episodes = wins_episodes + episode_won;
-                    losses_episodes = losses_episodes + ~episode_won;
+                    
+                    wins_clasification_with_mode(1, data_user) = wins_clasification_with_mode(1, data_user) + (class_mode == gestureName);
+                    losses_clasification_with_mode(1, data_user) = losses_clasification_with_mode(1, data_user) + (class_mode ~= gestureName);
+                    
+                    wins_episodes(1, data_user) = wins_episodes(1, data_user) + episode_won;
+                    losses_episodes(1, data_user) = losses_episodes(1, data_user) + ~episode_won;
                     
                     % this.updateEpsilon(data_user, dataPacketSize-2, episode, this.number_gestures_taken_from_user)
                     
@@ -139,11 +143,9 @@ classdef QNN < handle
                 
             end
             
-            accuracy_by_episode = wins_by_episode(1,:)./(wins_by_episode(1,:) + loses_by_episode(1,:));
-            
             % END TRAINING
-            summary = [wins_episodes, wins_clasification_with_mode, sum(sum(wins_by_episode)), ...
-                       losses_episodes, losses_clasification_with_mode, sum(sum(loses_by_episode))];
+            summary_episodes = [wins_episodes; losses_episodes];
+            summary_classifications_mode = [wins_clasification_with_mode; losses_clasification_with_mode];
             
             
         end
@@ -392,8 +394,8 @@ classdef QNN < handle
                     
             %---- Experience replay storage ------------------------------------
             
-            if reward > 0
-                this.num_correct_predictions = this.num_correct_predictions + 1;
+            % if reward < 0
+                % this.num_correct_predictions = this.num_correct_predictions + 1;
                 
                 this.index_gesture(action) = this.index_gesture(action) + 1;
                 index_experience_replay = mod(this.index_gesture(action), this.reserved_space_for_gesture);
@@ -404,7 +406,7 @@ classdef QNN < handle
                 offset = (action-1) * this.reserved_space_for_gesture;
                 this.gameReplay(offset+index_experience_replay, :) = [state, action, reward];   %[state(:)', action, reward, new_state(:)'];
 
-            end
+            % end
             
             this.learnFromExperienceReplay();
         end
@@ -551,10 +553,10 @@ classdef QNN < handle
             
             % hipotesis es a, la respuesta correcta es y (hot encoded)
             if is_custom_sparse_y
-                sparse_y = a(2:end);
-                sparse_y(y) = 0;
+                % sparse_y = a(2:end);
+                % sparse_y(y) = 0;
                 % INVERSE sparse. [1 1 1 0 1 1]
-                % sparse_y = sparse_one_hot_encoding(-y, this.qnnOption.numNeuronsLayers(number_layers));
+                sparse_y = sparse_one_hot_encoding(-y, this.qnnOption.numNeuronsLayers(number_layers));
             else
                 sparse_y = sparse_one_hot_encoding(y, this.qnnOption.numNeuronsLayers(number_layers));
             end
@@ -603,16 +605,25 @@ classdef QNN < handle
         end
 
 
-        function [summary, accuracy_by_episode] = test(this, verbose_level, num_gestures_validation)
+        function [summary_episodes, summary_classifications_mode, ... 
+                wins_by_episode, loses_by_episode] = test(this, verbose_level, num_gestures_validation)
+            
             EMG_window_size = evalin('base', 'WindowsSize');                                                %AQUI PONER WINDOW SIZE
             Stride = evalin('base', 'Stride');
             orientation      = evalin('base', 'orientation');
             dataPacketSize     = evalin('base', 'dataPacketSize');
             repTotalTraining  = num_gestures_validation*(dataPacketSize-2);  % is the same of repTotalTraining
-            wins_episodes = 0;
-            losses_episodes = 0;
-            wins_clasification_with_mode = 0;
-            losses_clasification_with_mode = 0;
+            
+             
+            wins_episodes = zeros(1, dataPacketSize-2);
+            losses_episodes = zeros(1, dataPacketSize-2);
+            
+            wins_clasification_with_mode = zeros(1, dataPacketSize-2);
+            losses_clasification_with_mode = zeros(1, dataPacketSize-2);
+            
+            
+            
+            
             wins_by_episode = zeros(dataPacketSize-2, num_gestures_validation);
             loses_by_episode = zeros(dataPacketSize-2, num_gestures_validation);
             
@@ -621,15 +632,16 @@ classdef QNN < handle
             dataPacket = evalin('base','dataPacket');
             % for each user in Specific
             for data_user=1:dataPacketSize-2
-                userIndex   = evalin('base', 'userIndex');
-                userData = loadSpecificUser(dataPacket, userIndex);
+                
+                assignin('base', 'userIndex', data_user+2);
+                userData = loadSpecificUser(dataPacket, data_user+2);
                 energy_index = strcmp(orientation(:,1), userData.userInfo.name);
                 rand_data=orientation{energy_index,6};
                 
                 for episode=1:num_gestures_validation
                     
                     if mod(episode, debug_step) == 0 && verbose_level >= 1 || episode == 1 || episode == num_gestures_validation
-                        fprintf("TESTING| User: %s, Episode(Gesture) %d of %d\n", userData.userInfo.name, episode, num_gestures_validation);
+                        fprintf("TESTING| User: %s (%d of %d), Episode(Gesture) %d of %d\n", userData.userInfo.name, data_user, dataPacketSize-2,  episode, num_gestures_validation);
                     end
                    
                     
@@ -649,19 +661,18 @@ classdef QNN < handle
                                         
                     wins_by_episode(data_user, episode) = count_wins_in_episode;
                     loses_by_episode(data_user, episode) = num_windows-count_wins_in_episode;
-                    wins_clasification_with_mode = wins_clasification_with_mode + (class_mode == gestureName);
-                    losses_clasification_with_mode = losses_clasification_with_mode + (class_mode ~= gestureName);
-                    wins_episodes = wins_episodes + episode_won;
-                    losses_episodes = losses_episodes + ~episode_won;                   
+                    wins_clasification_with_mode(1, data_user) = wins_clasification_with_mode(1, data_user) + (class_mode == gestureName);
+                    losses_clasification_with_mode(1, data_user) = losses_clasification_with_mode(1, data_user) + (class_mode ~= gestureName);
+                    wins_episodes(1, data_user) = wins_episodes(1, data_user) + episode_won;
+                    losses_episodes(1, data_user) = losses_episodes(1, data_user) + ~episode_won;                   
                     
                 end
                 
             end
             
-            accuracy_by_episode = wins_by_episode(1,:)./(wins_by_episode(1,:) + loses_by_episode(1,:));
-            summary = [wins_episodes, wins_clasification_with_mode, sum(sum(wins_by_episode)), ...
-                       losses_episodes, losses_clasification_with_mode, sum(sum(loses_by_episode))];
-            
+            % END TESTING
+            summary_episodes = [wins_episodes; losses_episodes];
+            summary_classifications_mode = [wins_clasification_with_mode; losses_clasification_with_mode];
             
         end
 

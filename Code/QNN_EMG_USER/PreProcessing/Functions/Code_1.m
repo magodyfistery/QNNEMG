@@ -94,7 +94,10 @@ if testControl==true
             %clc
             %disp('Fin de la muestra, 40 ventanas')
             %disp('Cambio de usuario')
+            assignin('base','emgRepetition', evalin('base','rangeDown'));
             assignin('base','counter',1); 
+            assignin('base', 'change_user', true);
+            
             %pause(2)
         end
      

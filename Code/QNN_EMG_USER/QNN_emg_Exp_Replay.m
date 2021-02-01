@@ -59,6 +59,7 @@ off = false;
 %==============Parameters for Code_0 (preprocesser of emg data)==========
 
 assignin('base','post_processing',     on);   %on si quiero post procesamiento en vector de etiquetas resultadnte                                          %off si quiero solo recomp -10 x recog 
+
 assignin('base','RepTraining',  RepTraining); 
 % if randomGestures is on, all will be random and packet EMG will not
 % put the gestures one after other secuentially
@@ -85,8 +86,8 @@ qnnOption = QNNOption(params.typeWorld, numNeuronsLayers, transferFunctions, ...
                 params.momentum, params.initialMomentum, ...
                 params.miniBatchSize, params.W, params.gamma, params.epsilon);
 
-            
-qnn = QNN(qnnOption, params.rewardType, RepTraining);
+
+qnn = QNN(qnnOption, params.rewardType, RepTraining, params.reserved_space_for_gesture);
 qnn.initTheta(initWeights(qnn.qnnOption.numNeuronsLayers, -1, 1))
 
 
@@ -105,42 +106,78 @@ for epoch=1:numEpochs
     % gestures to be read too. Also, generates other relevant variables
     Code_0(rangeDown);
     fprintf("****************\nEpoch: %d of %d\n***************\n", epoch, numEpochs);
-    [summary, accuracy_by_episode] = qnn.train(verbose_level-1);
+    
+    [summary_episodes, summary_classifications_mode, wins_by_episode, loses_by_episode] = qnn.train(verbose_level-1);
     
     
-    recognition_accuracy(1,epoch) = (summary(1)*100)/(summary(1)+summary(4));
-    classif_mode_ok_accuracy(1,epoch) = (summary(2)*100)/(summary(2)+summary(5));
-    classif_by_window_accuracy(1,epoch) = (summary(3)*100)/(summary(3)+summary(6));
+    recognition_accuracy(1,epoch) = (sum(summary_episodes(1, :))*100)/(sum(summary_episodes(1, :))+sum(summary_episodes(2, :)));
+    classif_mode_ok_accuracy(1,epoch) = (sum(summary_classifications_mode(1, :))*100)/(sum(summary_classifications_mode(1, :))+sum(summary_classifications_mode(2, :)));
+    classif_by_window_accuracy(1,epoch) = (sum(sum(wins_by_episode))*100)/(sum(sum(wins_by_episode))+sum(sum(loses_by_episode)));
     
-    fprintf("************************\nTRAINING Summary wins and losses\n************************\n");
-    fprintf("Episodes won: %d, Episodes lost: %d\n", summary(1), summary(4)); 
-    fprintf("Classif mode ok: %d, Classif mode NOT ok: %d\n", summary(2), summary(5)); 
-    fprintf("Total wins window: %d, Total losses window: %d\n", summary(3), summary(6)); 
-    fprintf("************************\nTRAINING Summary ACCURACY\n************************\n");
-    fprintf("Recognition accuracy: %2.2f%%\n", recognition_accuracy(1,epoch)); 
-    fprintf("Classif mode accuracy: %2.2f%%\n", classif_mode_ok_accuracy(1,epoch)); 
-    fprintf("Wins in window accuracy: %2.2f%%\n", classif_by_window_accuracy(1,epoch)); 
+%     fprintf("************************\nTRAINING Summary wins and losses\n************************\n");
+%     fprintf("Episodes won: %d, Episodes lost: %d\n", sum(summary_episodes(1, :)), sum(summary_episodes(2, :))); 
+%     fprintf("Classif mode ok: %d, Classif mode NOT ok: %d\n", sum(summary_classifications_mode(1, :)), sum(summary_classifications_mode(2, :))); 
+%     fprintf("Total wins window: %d, Total losses window: %d\n", sum(sum(wins_by_episode)), sum(sum(loses_by_episode))); 
     
-    figure(1);
-    plot(1:length(accuracy_by_episode),accuracy_by_episode, 'b');
+    
+    if epoch == numEpochs
+        
+        figure(2);
+        wins_t = wins_by_episode';
+        losses_t = loses_by_episode';
+        wins_in_total_episodes = wins_t(:);
+        losses_in_total_episodes = losses_t(:);
+
+        accuracy_by_episode = wins_in_total_episodes ./ (wins_in_total_episodes + losses_in_total_episodes);
+        plot(1:length(accuracy_by_episode),accuracy_by_episode, 'b');
+    end
+    
     
     % plot(1:length(accuracy(1,:)),accuracy(1,:));
     mean_acuracy_by_epoch(1, epoch) = mean(accuracy_by_episode);
 end
-fprintf("Num. Trainings with samples: known=%d,dont known=%d\n", qnn.known, qnn.dont_known);
-elapsedTimeHours = toc(tStart)/3600;
-fprintf('\nElapsed time for training: %3.3f h\n\n', elapsedTimeHours);
-
+% fprintf("Num. Trainings with samples: known=%d,dont known=%d\n", qnn.known, qnn.dont_known);
+elapsedTimeHoursTrain = toc(tStart)/3600;
 training_accuracy = (mean(recognition_accuracy) + mean(classif_mode_ok_accuracy) + mean(classif_by_window_accuracy))/3;
 
 
-tStart = tic;
-Code_0(rangeDown+RepTraining);
-[summary_test, accuracy_by_episode_test] = qnn.test(verbose_level-1, repTrainingForTesting);
-elapsedTimeHours = toc(tStart)/3600;
-fprintf('Elapsed time for testing: %3.3f h \n', elapsedTimeHours);
+%%% TESTING
+rangeDown_test=rangeDown+RepTraining;  %limite inferior de rango de muestras a leer
+assignin('base','rangeDown', rangeDown_test); 
+assignin('base','RepTraining',  repTrainingForTesting); % ?? hace algo esto?
 
-figure(1);
+tStart = tic;
+Code_0(rangeDown_test);
+[test_summary_episodes, test_summary_classifications_mode, test_wins_by_episode, test_loses_by_episode] = qnn.test(verbose_level-1, repTrainingForTesting);
+elapsedTimeHoursTest = toc(tStart)/3600;
+
+test_recognition_accuracy = (sum(test_summary_episodes(1, :))*100)/(sum(test_summary_episodes(1, :))+sum(test_summary_episodes(2, :)));
+test_classif_mode_ok_accuracy = (sum(test_summary_classifications_mode(1, :))*100)/(sum(test_summary_classifications_mode(1, :))+sum(test_summary_classifications_mode(2, :)));
+test_classif_by_window_accuracy = (sum(sum(test_wins_by_episode))*100)/(sum(sum(test_wins_by_episode))+sum(sum(test_loses_by_episode)));
+
+% fprintf("************************\nTESTING Summary wins and losses\n************************\n");
+% fprintf("Episodes won: %d, Episodes lost: %d\n", sum(test_summary_episodes(1, :)), sum(test_summary_episodes(2, :))); 
+% fprintf("Classif mode ok: %d, Classif mode NOT ok: %d\n", sum(test_summary_classifications_mode(1, :)), sum(test_summary_classifications_mode(2, :))); 
+% fprintf("Total wins window: %d, Total losses window: %d\n", sum(sum(wins_by_episode)), sum(sum(test_loses_by_episode))); 
+
+fprintf("************************\nTRAINING Summary ACCURACY\n************************\n");
+fprintf("%2.2f %2.2f %2.2f\n", recognition_accuracy(1,epoch), classif_mode_ok_accuracy(1,epoch), classif_by_window_accuracy(1,epoch)); 
+    
+fprintf("************************\nTESTING Summary ACCURACY\n************************\n");
+fprintf("%2.2f %2.2f %2.2f\n", test_recognition_accuracy, test_classif_mode_ok_accuracy, test_classif_by_window_accuracy); 
+
+test_accuracy = (test_recognition_accuracy + test_classif_mode_ok_accuracy + test_classif_by_window_accuracy)/3;
+
+
+
+figure(2);
+wins_t = test_wins_by_episode';
+losses_t = test_loses_by_episode';
+test_wins_in_total_episodes = wins_t(:);
+test_losses_in_total_episodes = losses_t(:);
+
+accuracy_by_episode_test = test_wins_in_total_episodes ./ (test_wins_in_total_episodes + test_losses_in_total_episodes);
+
 hold on;
 plot(1:length(accuracy_by_episode_test),accuracy_by_episode_test, 'r');
 hold off;
@@ -151,28 +188,19 @@ title('Accuracy for episode')
 grid on;
 
 
-test_recognition_accuracy = (summary_test(1)*100)/(summary_test(1)+summary_test(4));
-test_classif_mode_ok_accuracy = (summary_test(2)*100)/(summary_test(2)+summary_test(5));
-test_classif_by_window_accuracy = (summary_test(3)*100)/(summary_test(3)+summary_test(6));
 
-fprintf("************************\nVALIDATION: Summary wins and losses\n************************\n");
-fprintf("Episodes won: %d, Episodes lost: %d\n", summary_test(1), summary_test(4)); 
-fprintf("Classif mode ok: %d, Classif mode NOT ok: %d\n", summary_test(2), summary_test(5)); 
-fprintf("Total wins window: %d, Total losses window: %d\n", summary_test(3), summary_test(6)); 
-fprintf("************************\nTEST: Summary ACCURACY\n************************\n");
-fprintf("Recognition accuracy: %2.2f%%\n", test_recognition_accuracy(1,epoch)); 
-fprintf("Classif mode accuracy: %2.2f%%\n", test_classif_mode_ok_accuracy(1,epoch)); 
-fprintf("Wins in window accuracy: %2.2f%%\n", test_classif_by_window_accuracy(1,epoch)); 
-    
-    
-test_accuracy = (test_recognition_accuracy + test_classif_mode_ok_accuracy + test_classif_by_window_accuracy)/3;
-
-
-figure(2)
+figure(3)
 plot(1:length(qnn.training_cost), qnn.training_cost);
 xlabel('update NN')
 ylabel('Cost')
 legend('training')
 title('Cost by episode update')
+
+
+
+
+fprintf('\nElapsed time for training: %3.3f h\n', elapsedTimeHoursTrain);
+fprintf('Elapsed time for testing: %3.3f h \n', elapsedTimeHoursTest);
+
 end
 
