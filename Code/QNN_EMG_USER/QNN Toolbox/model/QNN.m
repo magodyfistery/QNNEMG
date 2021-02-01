@@ -108,7 +108,7 @@ classdef QNN < handle
                 % each episode has num_windows with the window_size/stride
                 for episode=1:this.number_gestures_taken_from_user
                     
-                    if mod(episode, debug_step) == 0 && verbose_level >= 1 || episode == 1 || episode == this.number_gestures_taken_from_user
+                    if (mod(episode, debug_step) == 0 || episode == 1 || episode == this.number_gestures_taken_from_user)  && verbose_level >= 1
                         fprintf("TRAINING| User: %s (%d of %d), Episode(Gesture) %d of %d\n", userData.userInfo.name, data_user, dataPacketSize-2, episode, this.number_gestures_taken_from_user);
                     end
                    
@@ -263,7 +263,7 @@ classdef QNN < handle
             
             [reward_for_recognition, class_mode] = this.getRewardForRecognition(...
                 etiquetas_labels_predichas_vector, etiquetas_labels_predichas_vector_simplif, ...
-                post_processing, gestureName, groundTruth_GT, TimePoints_vector, ProcessingTimes_vector);
+                post_processing, gestureName, groundTruth_GT, TimePoints_vector, ProcessingTimes_vector, verbose_level-1);
             
             % boolean, each episode won is a recognition win
             episode_won = reward_for_recognition == this.amount_reward_recognition_correct;
@@ -329,7 +329,7 @@ classdef QNN < handle
         
         function [reward_recognition, class_mode] = getRewardForRecognition(this, ...
                 etiquetas_labels_predichas_vector, etiquetas_labels_predichas_vector_simplif, ...
-                post_processing, gestureName_GT, groundTruth_GT, TimePoints_vector, ProcessingTimes_vector)
+                post_processing, gestureName_GT, groundTruth_GT, TimePoints_vector, ProcessingTimes_vector, verbose_level)
             
             
             %=============Saco la moda de los gestos diferentes a NoGesture
@@ -371,8 +371,9 @@ classdef QNN < handle
                 r1 = evalRecognition(repInfo, response);
             catch
                 %PENDING DEPURAR PORQUE PASA ESTO
-                disp('EL vector de predicciones esta compuesto por una misma etiqueta -> Func Eval Recog no funciona');
-
+                if verbose_level >= 1
+                    disp('EL vector de predicciones esta compuesto por una misma etiqueta -> Func Eval Recog no funciona');
+                end
                 r1.recogResult=0;
                 if gestureName_GT==response.class
                     r1.classResult=1;
@@ -640,7 +641,7 @@ classdef QNN < handle
                 
                 for episode=1:num_gestures_validation
                     
-                    if mod(episode, debug_step) == 0 && verbose_level >= 1 || episode == 1 || episode == num_gestures_validation
+                    if (mod(episode, debug_step) == 0 || episode == 1 || episode == num_gestures_validation) && verbose_level >= 1
                         fprintf("TESTING| User: %s (%d of %d), Episode(Gesture) %d of %d\n", userData.userInfo.name, data_user, dataPacketSize-2,  episode, num_gestures_validation);
                     end
                    

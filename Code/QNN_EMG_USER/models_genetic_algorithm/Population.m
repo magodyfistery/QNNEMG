@@ -43,23 +43,33 @@ classdef Population < handle
             
             for i=1:this.max_population
                 
-                if verbose_level >= 2
+                if verbose_level >= 1
                     fprintf("Individual %d of %d\n", i, this.max_population);
                 end
-                params.learning_rate = this.chromosomes(i).gens(1);
-                params.neurons_hidden1 = this.chromosomes(i).gens(2);
-                params.neurons_hidden2 = this.chromosomes(i).gens(3);
-                params.window_size = this.chromosomes(i).gens(4);
-                params.stride = this.chromosomes(i).gens(5);
-                params.numEpochsToIncreaseMomentum = this.chromosomes(i).gens(6);
-                params.miniBatchSize = this.chromosomes(i).gens(7);
-                params.lambda = this.chromosomes(i).gens(8);
+                params.learningRate = this.chromosomes(i).gens(1);
+                params.neurons_hidden1 = ceil(this.chromosomes(i).gens(2));
+                params.neurons_hidden2 = ceil(this.chromosomes(i).gens(3));
+                params.miniBatchSize = ceil(this.chromosomes(i).gens(4));
+                window_size = ceil(this.chromosomes(i).gens(5));
+                stride = ceil(this.chromosomes(i).gens(6));
+                params.reserved_space_for_gesture = ceil(this.chromosomes(i).gens(7));
+                params.epsilon = this.chromosomes(i).gens(8);
+                % not implemented or not relevant to optimize
+                params.lambda = 0;
+                params.gamma = 1;
+                params.initialMomentum = 0.3;
+                params.momentum = 0.9;
+                params.numEpochsToIncreaseMomentum = 50;
+                params.typeWorld = 'randWorld';
+                params.W = 25;
+                params.rewardType = 1;
                 
-                [training_accuracy, test_accuracy] = QNN_train_emg_Exp_Replay_SxWx( ...
-                    params, verbose_level >= 3);
+                [training_accuracy, test_accuracy, ~] = QNN_emg_Exp_Replay(..., 
+                params, window_size, stride, "genetic_individual", -1, 87, 13);
                 
                 % ponderation of the accuracys
-                penalization = abs(training_accuracy - test_accuracy); % penalizate overfitting 
+                % penalization = abs(training_accuracy - test_accuracy); % penalizate overfitting 
+                penalization = 0;
                 fitness(i) = (training_accuracy+test_accuracy)/2 - penalization;
             end
         end

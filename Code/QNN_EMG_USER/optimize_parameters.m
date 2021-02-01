@@ -6,21 +6,24 @@ addpath("utils/math");
 
 verbose_level = 2;
 
-generations = 3;  % its just a stop step in case the program cant find solution
-max_population = 2;  % while more high, more posibilities to find a good combination faster, but more processing
-num_parents_to_select = 1;  % is better tu select very little, no more than 10% of max population
+generations = 2;  % its just a stop step in case the program cant find solution
+max_population = 3;  % while more high, more posibilities to find a good combination faster, but more processing
+num_parents_to_select = 2;  % is better tu select very little, no more than 10% of max population
 mutation_rate = 0.9;
 
+amount_examples = 5;
+
 % examples of parameters
-gens_set = [0.01, 0.03, 0.1, 0.3; ... % learning_rate_examples, with [minimun ...arbitrary... maximun]
-              30,  40,  50, 60; ...  % neurons_hidden1_example, with [minimun ...arbitrary... maximun]
-              30,  40,  50, 60; ...  % neurons_hidden2_example, with [minimun ...arbitrary... maximun]
-              200,  300,  350, 400; ...  % window_size
-              20,  40,  65, 90; ...  % stride
-              10,  30,  50, 70; ...  % numEpochsToIncreaseMomentum
-              10,  20,  30, 50; ...  % miniBatchSize
-              0,  0.1,  0.3, 0.9 ...  % lambda
+gens_set = [linspace(0.01, 0.9, amount_examples); ... % learning_rate_examples, with [minimun ...arbitrary... maximun]
+              linspace(10, 100, amount_examples); ...  % neurons_hidden1_example, with [minimun ...arbitrary... maximun]
+              linspace(10, 100, amount_examples); ...  % neurons_hidden2_example, with [minimun ...arbitrary... maximun]
+              linspace(5, 100, amount_examples); ...  % miniBatchSize
+              linspace(10, 400, amount_examples); ...  % window_size
+              linspace(10, 400, amount_examples); ...  % stride
+              linspace(10, 100, amount_examples); ...  % reserved space for gesture
+              linspace(0, 1, amount_examples)  % epsilon
               ];
+                  
           
           
 % num of parameters to optimice (alpha, neurons_hidden1)
@@ -44,7 +47,7 @@ for generation=1:generations
        fprintf("*********************\n"); 
     end
     
-    fitness = population.fitness_function(verbose_level);
+    fitness = population.fitness_function(verbose_level-1);
     
     % being elitist means that the parents are the best 2 (maybe a little more)
     
