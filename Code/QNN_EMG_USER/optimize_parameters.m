@@ -6,21 +6,21 @@ addpath("utils/math");
 
 verbose_level = 2;
 
-generations = 2;  % its just a stop step in case the program cant find solution
-max_population = 3;  % while more high, more posibilities to find a good combination faster, but more processing
+generations = 3;  % its just a stop step in case the program cant find solution
+max_population = 10;  % while more high, more posibilities to find a good combination faster, but more processing
 num_parents_to_select = 2;  % is better tu select very little, no more than 10% of max population
 mutation_rate = 0.9;
 
-amount_examples = 5;
+amount_examples = 100;
 
 % examples of parameters
 gens_set = [linspace(0.01, 0.9, amount_examples); ... % learning_rate_examples, with [minimun ...arbitrary... maximun]
               linspace(10, 100, amount_examples); ...  % neurons_hidden1_example, with [minimun ...arbitrary... maximun]
               linspace(10, 100, amount_examples); ...  % neurons_hidden2_example, with [minimun ...arbitrary... maximun]
-              linspace(5, 100, amount_examples); ...  % miniBatchSize
+              linspace(5, 25, amount_examples); ...  % miniBatchSize
               linspace(10, 400, amount_examples); ...  % window_size
               linspace(10, 400, amount_examples); ...  % stride
-              linspace(10, 100, amount_examples); ...  % reserved space for gesture
+              linspace(10, 30, amount_examples); ...  % reserved space for gesture
               linspace(0, 1, amount_examples)  % epsilon
               ];
                   

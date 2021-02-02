@@ -44,7 +44,8 @@ classdef Population < handle
             for i=1:this.max_population
                 
                 if verbose_level >= 1
-                    fprintf("Individual %d of %d\n", i, this.max_population);
+                    fprintf("Individual %d of %d. Gens:\n", i, this.max_population);
+                    disp(this.chromosomes(i).gens);
                 end
                 params.learningRate = this.chromosomes(i).gens(1);
                 params.neurons_hidden1 = ceil(this.chromosomes(i).gens(2));
