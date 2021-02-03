@@ -80,7 +80,7 @@ assignin('base','packetEMG',     on);
 % Parameters
 typeWorld = 'randWorld';  % Type of the world of the game: deterministic, randAgent, and randWord
 numNeuronsLayers = [40, params.neurons_hidden1, params.neurons_hidden2, 6];
-transferFunctions = {'none', 'sigmoid', 'sigmoid', 'sigmoid'};
+transferFunctions = {'none', 'relu', 'relu', 'purelin'};
 
 
 qnnOption = QNNOption(params.typeWorld, numNeuronsLayers, transferFunctions, ...
@@ -90,7 +90,9 @@ qnnOption = QNNOption(params.typeWorld, numNeuronsLayers, transferFunctions, ...
 
 
 qnn = QNN(qnnOption, params.rewardType, RepTraining, params.reserved_space_for_gesture);
-qnn.initTheta(initWeights(qnn.qnnOption.numNeuronsLayers, -1, 1))
+qnn.initTheta(randInitializeWeights(qnn.qnnOption.numNeuronsLayers))
+% con esta inicialización el entrenamiento no sirve ???
+% theta2 = initWeights(qnn.qnnOption.numNeuronsLayers, -1, 1);
 
 
 
@@ -192,7 +194,7 @@ if verbose_level >= 1
 
 
     figure(3)
-    plot(1:length(qnn.training_cost), qnn.training_cost);
+    plot(1:length(qnn.cost), qnn.cost);
     xlabel('update NN')
     ylabel('Cost')
     legend('training')
