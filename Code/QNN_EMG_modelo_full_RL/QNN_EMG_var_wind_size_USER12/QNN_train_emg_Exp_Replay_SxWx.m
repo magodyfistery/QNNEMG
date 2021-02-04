@@ -1,31 +1,8 @@
 function QNN_train_emg_Exp_Replay_SxWx(USER_ID, experiment_begin, ...
     experiment_end, make_validation_too, write_excel, windows_sizes, strides, numRealEpochs)
 %{
-    Parameters:
-        USER_ID: int -> número del usuario. Ejms: 1,3,5,306
-        experiment_begin: int -> en el CSV de expériments, el identificador
-            del experimento de inicio. Ejm: 27
-        experiment_end: int -> en el CSV de expériments, el identificador
-            del experimento de inicio. Ejm: 32
-        make_validation_too: bool -> si es verdadero hace también
-            validación usando rangedown=26+repTraining del entrenamiento,
-            caso contrario la validación no se ejecuta.
-        write_excel: bool -> si es verdadero escribirá resultados en
-            experiments, caso contrario no escribirá esas filas
-        windows_sizes: array -> vector con todos los tamaños de ventana a
-            testear. Ejm: [200 250 300]
-        strides: array -> vector con todos los strides para probar con cada
-            uno de los tamaños de ventana anteriormente descritos. 
-            Ejm: [20 40 50]
-        numRealEpochs: int -> número de épocas. Es decir, número de veces
-            que se le mostrará los mismos datos al modelo. Ejm: 10
-    
-  Ejemplo de llamada, si tengo en specific al usuario 288 y quiero probar
-  del experimento 27 al 30 con validación escribiendo en excel. Para
-  solamente el tamaño de ventana 200 y strides 100, 50. Se le muestra dos
-  veces los mismos datos (real-epochs es 2)
-  
-  QNN_train_emg_Exp_Replay_SxWx(288, 27, 30, true, true, [200], [50 100], 2)    
+  QNN_train_emg_Exp_Replay_SxWx(numero de usuario, 27, 32, true, true, [250], [20 40 50])  
+  QNN_train_emg_Exp_Replay_SxWx(2, 27, 32, true, true, [250], [20 40 50])    
 %}
 
 clc;
