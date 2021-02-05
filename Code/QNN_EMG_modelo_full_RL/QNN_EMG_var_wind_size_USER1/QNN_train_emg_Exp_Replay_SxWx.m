@@ -1,31 +1,8 @@
 function QNN_train_emg_Exp_Replay_SxWx(USER_ID, experiment_begin, ...
     experiment_end, make_validation_too, write_excel, windows_sizes, strides, numRealEpochs)
 %{
-    Parameters:
-        USER_ID: int -> número del usuario. Ejms: 1,3,5,306
-        experiment_begin: int -> en el CSV de expériments, el identificador
-            del experimento de inicio. Ejm: 27
-        experiment_end: int -> en el CSV de expériments, el identificador
-            del experimento de inicio. Ejm: 32
-        make_validation_too: bool -> si es verdadero hace también
-            validación usando rangedown=26+repTraining del entrenamiento,
-            caso contrario la validación no se ejecuta.
-        write_excel: bool -> si es verdadero escribirá resultados en
-            experiments, caso contrario no escribirá esas filas
-        windows_sizes: array -> vector con todos los tamaños de ventana a
-            testear. Ejm: [200 250 300]
-        strides: array -> vector con todos los strides para probar con cada
-            uno de los tamaños de ventana anteriormente descritos. 
-            Ejm: [20 40 50]
-        numRealEpochs: int -> número de épocas. Es decir, número de veces
-            que se le mostrará los mismos datos al modelo. Ejm: 10
-    
-  Ejemplo de llamada, si tengo en specific al usuario 288 y quiero probar
-  del experimento 27 al 30 con validación escribiendo en excel. Para
-  solamente el tamaño de ventana 200 y strides 100, 50. Se le muestra dos
-  veces los mismos datos (real-epochs es 2)
-  
-  QNN_train_emg_Exp_Replay_SxWx(288, 27, 30, true, true, [200], [50 100], 2)    
+  QNN_train_emg_Exp_Replay_SxWx(numero de usuario, 27, 32, true, true, [250], [20 40 50])  
+  QNN_train_emg_Exp_Replay_SxWx(2, 27, 32, true, true, [250], [20 40 50])    
 %}
 
 clc;
@@ -68,7 +45,33 @@ global index_miniBatchSize
 global index_lambda
 global filename_experimentsQNN
 
-
+row_position = 1;  % begins in A3 o excel to AN
+if write_excel
+    for index_windows_sizes=1:numel(windows_sizes)
+        window_size=windows_sizes(index_windows_sizes);
+        
+        for index_strides=1:numel(strides)
+            
+            %if strides(index_strides) == 20 && window_size == 200
+                % ya se hizo
+            %    continue;
+            %end
+            
+            add_filename_window_stride = "_windowSize" + window_size + "_stride" + strides(index_strides) + "_epochs" + numRealEpochs + ".xlsx";
+            dir_filename_window_stride = replace(filename_experimentsQNN, ".xlsx", add_filename_window_stride);
+            
+            if index_strides == numel(strides) && index_windows_sizes == numel(windows_sizes)
+                row_position = write_excel_training_wind_stride_base(dir_filename_window_stride, USER_ID, row_position);
+            else
+                write_excel_training_wind_stride_base(dir_filename_window_stride, USER_ID, row_position);
+            end
+            
+        end
+        
+    end
+    
+end
+%%%%CAMBIODANNYFIN%%%%
 
 % Type of the world of the game: deterministic, randAgent, and randWord
 typeWorld = 'randWorld';
@@ -84,7 +87,6 @@ addpath(genpath('PreProcessing'));
 addpath(genpath('testingJSON'));
 addpath(genpath('trainingJSON'));
 
-row_position = 3;  % begins in A3 o excel to AN
 %%%%PARAMETRIZACION_DANNY%%%%
 for experiment_id=experiment_begin:experiment_end
     
@@ -163,21 +165,9 @@ for experiment_id=experiment_begin:experiment_end
             theta = randInitializeWeights(numNeuronsLayers); 
 			
 			accuracy_by_epoch = zeros(1, numRealEpochs);
-            
+            s2 = ""+experiment_id+"_windowSize"+window_size+"_stride"+stride+"_numEpochs"+numRealEpochs;
+            assignin('base','s2', s2);  
             for realEpoch=1:numRealEpochs
-                
-                general_file = "_windowSize"+window_size+"_stride"+stride+"_epoch"+realEpoch;
-                s2 = ""+experiment_id+general_file;
-                assignin('base','s2', s2);  
-                
-                if write_excel
-                    dir_filename_window_stride = replace(filename_experimentsQNN, ".xlsx", general_file+".xlsx");
-                    write_excel_training_wind_stride_base(dir_filename_window_stride, USER_ID, 1);
-                    
-
-                end
-                %%%%CAMBIODANNYFIN%%%%
-                
                 fprintf("***********\nREAL EPOCH: %d of %d\n***********\n", realEpoch, numRealEpochs);
 
                 rangeDown=26;  %limite inferior de rango de muestras a leer
@@ -224,54 +214,50 @@ for experiment_id=experiment_begin:experiment_end
                 accuracy_by_epoch(1, realEpoch) = (summary(1)/(summary(1)+summary(4)) + summary(2)/(summary(2)+summary(5)) + summary(3)/(summary(3)+summary(6)))/3;
                 elapsedTimeHours = toc(tStart)/3600;
                 fprintf('\n Elapsed time for training: %3.3f h \n', elapsedTimeHours);
-            
-                
-                s1 = 'QNN_Trained_Model_';
-                s3 = '.mat';
-                s = strcat(s1,s2,s3); 
-                
-                %validation
-                save('QNN_Trained_Model.mat','weights', 'numNeuronsLayers',...
-                'transferFunctions', 'options', 'typeWorld', 'flagDisplayWorld');
-
-                %%%%CAMBIODANNYINICIO%%%%
-                model_dir = strcat("results/models/", s);
-                save(model_dir,'weights', 'numNeuronsLayers',...
-                    'transferFunctions', 'options', 'typeWorld', 'flagDisplayWorld');
-
-                %%%%CAMBIODANNYFIN%%%%
-
-
-                %%%%CAMBIODANNYINICIO%%%%
-                % put results in excel
-                if write_excel
-                    write_experiment_wind_stride_row(dir_filename_window_stride, parameters_training, row_position, summary, experiment_id, USER_ID);
-                end
-
-                %%%%CAMBIODANNYFIN%%%%
-                
-                
-            
             end
             
+                      
+            s1 = 'QNN_Trained_Model_';
+
+            s3 = '.mat';
+            s = strcat(s1,s2,s3); 
+            a1 = 'FigEpochs_Exp_';
+            a3 = '.png';
+            saux = strcat("results/figures/", a1,s2,a3);
             
             if numRealEpochs > 1
-                a1 = 'FigEpochs_Exp_';
-                a3 = '.png';
-                s2 = ""+experiment_id+"_windowSize"+window_size+"_stride"+stride+"_numEpochs"+numRealEpochs;
-                
-                saux = strcat("results/figures/", a1,s2,a3);
                 figure(5);
                 plot(1:numel(accuracy_by_epoch), accuracy_by_epoch);
                 saveas(gcf,saux)
                 close all;
             end
             
-            
-        end
-    end
-    row_position = row_position + 1;
+            save('QNN_Trained_Model.mat','weights', 'numNeuronsLayers',...
+                'transferFunctions', 'options', 'typeWorld', 'flagDisplayWorld');
 
+            %%%%CAMBIODANNYINICIO%%%%
+            model_dir = strcat("results/models/", s);
+            save(model_dir,'weights', 'numNeuronsLayers',...
+                'transferFunctions', 'options', 'typeWorld', 'flagDisplayWorld');
+            
+            %%%%CAMBIODANNYFIN%%%%
+            
+            
+            %%%%CAMBIODANNYINICIO%%%%
+            % put results in excel
+            if write_excel
+                dir_filename_window_stride = replace(filename_experimentsQNN, ".xlsx", add_filename_window_stride);   
+                if index_stride == numel(strides) && index_window == numel(windows_sizes)
+                    row_position = write_experiment_wind_stride_row(dir_filename_window_stride, parameters_training, row_position, summary, experiment_id, USER_ID);
+                    
+                else
+                    write_experiment_wind_stride_row(dir_filename_window_stride, parameters_training, row_position, summary, experiment_id, USER_ID);
+                end
+            end
+
+            %%%%CAMBIODANNYFIN%%%%
+        end
+     end
 end
 
 %%%%CAMBIODANNYINICIO%%%%
