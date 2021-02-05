@@ -210,25 +210,25 @@ for experiment_id=experiment_begin:experiment_end
                         assignin('base','gt_gestures_pts',gt_gestures_pts);
 
                          %Creo vector de etiquetas para Ground truth x ventana
-                        gt_gestures_labels = mapGroundTruthToLabelsWithPts(gt_gestures_pts, groundTruthIndex_GT, gestureName_GT, 0.2);
+                        % gt_gestures_labels = mapGroundTruthToLabelsWithPts(gt_gestures_pts, groundTruthIndex_GT, gestureName_GT, 0.2);
 
 
 
-    %                     gt_gestures_labels=strings;
-    %                     %gt_gestures_labels(1,1)="noGesture";
-    %                     for k2 = 1:Numero_Ventanas_GT
-    %                         if gt_gestures_pts(1,k2) > (groundTruthIndex_GT(1,1) + EMG_window_size/5) && gt_gestures_pts(1,k2) < groundTruthIndex_GT(1,2)
-    %                             %disp('case1')
-    %                             gt_gestures_labels(1,k2)=string(gestureName_GT);
-    %                         elseif  gt_gestures_pts(1,k2)-EMG_window_size < (groundTruthIndex_GT(1,2)-EMG_window_size/5 ) && gt_gestures_pts(1,k2) > groundTruthIndex_GT(1,2)
-    %                             %Considero 1/5 el tamaño de la ventana
-    %                             %disp('case2')
-    %                             gt_gestures_labels(1,k2)=string(gestureName_GT);
-    %                         else
-    %                             %disp('case3')
-    %                             gt_gestures_labels(1,k2)="noGesture";
-    %                         end
-    %                     end
+                        gt_gestures_labels=strings;
+                        %gt_gestures_labels(1,1)="noGesture";
+                        for k2 = 1:Numero_Ventanas_GT
+                            if gt_gestures_pts(1,k2) > (groundTruthIndex_GT(1,1) + EMG_window_size/5) && gt_gestures_pts(1,k2) < groundTruthIndex_GT(1,2)
+                                %disp('case1')
+                                gt_gestures_labels(1,k2)=string(gestureName_GT);
+                            elseif  gt_gestures_pts(1,k2)-EMG_window_size < (groundTruthIndex_GT(1,2)-EMG_window_size/5 ) && gt_gestures_pts(1,k2) > groundTruthIndex_GT(1,2)
+                                %Considero 1/5 el tamaño de la ventana
+                                %disp('case2')
+                                gt_gestures_labels(1,k2)=string(gestureName_GT);
+                            else
+                                %disp('case3')
+                                gt_gestures_labels(1,k2)="noGesture";
+                            end
+                        end
                         %disp('gt_gestures_labels');disp(gt_gestures_labels);
                         assignin('base','gt_gestures_labels',gt_gestures_labels);
                         %Creo vector de etiquetas de Ground truth con valores numericos

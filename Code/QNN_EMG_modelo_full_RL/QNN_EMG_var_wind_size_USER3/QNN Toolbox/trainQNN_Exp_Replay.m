@@ -193,6 +193,7 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
     %disp('gt_gestures_pts');disp(gt_gestures_pts);
     assignin('base','gt_gestures_pts',gt_gestures_pts);
     
+    %gt_gestures_labels = mapGroundTruthToLabelsWithPts(gt_gestures_pts, groundTruthIndex_GT, gestureName_GT, 0.2);
     %Creo vector de etiquetas para Ground truth x ventana
     gt_gestures_labels=strings;
     %gt_gestures_labels(1,1)="noGesture";
@@ -325,10 +326,14 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
         % Si rand <= epsilon, obtengo un Q de manera aleatoria, el cual será diferente a Qmax (exploracion)
         %disp('epsilon');disp(epsilon);
         if rand <= epsilon            % siempre se cumple con epsilon=1% %Initial value of epsilon for the epsilon-greedy exploration
-            actionList = 1:6;    %actionList = 1:6;               % posibles acciones  (AQUI HAY QUE CAMBIAR - #clases) usar gestos
-            actionList = actionList(actionList ~= idx);           %  Crea lista con las acciones q no tienen Qmax
-            [dummyVar, idx] = sort( rand(1, 6) ); %rand(1, 3) rand(1, 5) %  creo vector randomico de 5 elementos [a, b, c, d, e] con valores de 1 a 5
-            %disp('idxRand');disp(idx(1));
+            full_action_list = 1:6;    %actionList = 1:6;               % posibles acciones  (AQUI HAY QUE CAMBIAR - #clases) usar gestos
+            actionList = full_action_list(full_action_list ~= idx);           %  Crea lista con las acciones q no tienen Qmax
+            idx_valid_action = randi([1 length(actionList)]);
+            idx = full_action_list(actionList(idx_valid_action));
+            %             actionList = 1:6;    %actionList = 1:6;               % posibles acciones  (AQUI HAY QUE CAMBIAR - #clases) usar gestos
+%             actionList = actionList(actionList ~= idx);           %  Crea lista con las acciones q no tienen Qmax
+%             [dummyVar, idx] = sort( rand(1, 6) ); %rand(1, 3) rand(1, 5) %  creo vector randomico de 5 elementos [a, b, c, d, e] con valores de 1 a 5
+%             %disp('idxRand');disp(idx(1));
         end
         
         % - Predigo accion en base a Epsilon-Greedy
