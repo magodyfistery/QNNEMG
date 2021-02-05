@@ -84,7 +84,7 @@ addpath(genpath('PreProcessing'));
 addpath(genpath('testingJSON'));
 addpath(genpath('trainingJSON'));
 
-row_position = 3;  % begins in A3 o excel to AN
+row_position = 1;  % begins in A3 o excel to AN
 %%%%PARAMETRIZACION_DANNY%%%%
 for experiment_id=experiment_begin:experiment_end
     
