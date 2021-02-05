@@ -55,7 +55,7 @@ for experiment_id=experiment_begin:experiment_end
             
             %%%%PARAMETRIZACION_DANNY%%%%
             assignin('base','Stride',  stride);        %CAMBIAR - 20
-            RepTraining        =  1; %parameters_validation(experiment_id, index_RepTraining);       %numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
+            RepTraining        =  parameters_validation(experiment_id, index_RepTraining);       %numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
 
             on  = true;
             off = false;

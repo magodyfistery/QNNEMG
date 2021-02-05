@@ -1,22 +1,25 @@
-params.learningRate = 0.05;
+params.learningRate = 0.1;
 params.neurons_hidden1 = 50;
 params.neurons_hidden2 = 50;
 params.numEpochsToIncreaseMomentum = 50;
-params.miniBatchSize = 25;
-params.reserved_space_for_gesture = 30;
 params.lambda = 0;
 params.momentum = 0.9;
 params.initialMomentum = 0.3;
 % Q-learning settings
-params.gamma = 1; % Q-learning parameter
-params.epsilon = 0.2; %Initial value of epsilon for the epsilon-greedy exploration
+params.gamma = 0.9; % Q-learning parameter
+params.epsilon = 0.1; %Initial value of epsilon for the epsilon-greedy exploration
 params.W = 25;   % Window length for data smoothing
 params.typeWorld = 'randWorld'; % Type of the world of the game: deterministic, randAgent, and randWord
 
 params.rewardType = 1;
 
-window_size = 200;  % 250
+window_size = 230;  % 250
 stride = 20;% ceil(window_size/5);  % jump between windows
+
+
+params.reserved_space_for_gesture = ceil(getNumberWindows(997, window_size, stride, false)/3);
+
+params.miniBatchSize = getNumberWindows(997, window_size, stride, false);
 
 verbose_level = 2;
 model_name = "just_testing";
@@ -32,5 +35,3 @@ total_num_windows_predicted = qnn.total_num_windows_predicted;
 save("theta.mat",'theta');
 save("experience_replay.mat",'experience_replay');
 save("total_num_windows_predicted.mat",'total_num_windows_predicted');
-
-

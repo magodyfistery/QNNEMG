@@ -152,6 +152,7 @@ classdef QNN < handle
                     
                     
                     
+                    this.learnFromExperienceReplay();
                     
                 end
                 
@@ -285,7 +286,6 @@ classdef QNN < handle
                 state = new_state;
                 window_n = window_n + 1;
                 
-                this.learnFromExperienceReplay();
                                 
             end
             
@@ -476,26 +476,8 @@ classdef QNN < handle
                 action_er = valid_replay(randIdx(numExample), 41);           %65
                 reward_er = valid_replay(randIdx(numExample), 42);
 
-                if this.Reward_type ==true
-
-                    if reward_er == -1  %-1       OJO CON ESTE
-                        % Non-terminal state
-                        update_er = reward_er + this.qnnOption.gamma*maxQval_er;
-                    else
-                        % Terminal state
-                        update_er = reward_er;
-                    end
-                else
-
-                    if reward_er == 0  %-1       OJO CON ESTE
-                        % Non-terminal state
-                        update_er = reward_er + gamma*maxQval_er;
-                    else
-                        % Terminal state
-                        update_er = reward_er;
-                    end
-                end
-
+                update_er = old_Qval_er(action_er) + 0.2*(reward_er + this.qnnOption.gamma*maxQval_er-old_Qval_er(action_er));
+ 
 
                 % Data for training the ANN
                 dataX(numExample, :) = old_state_er;  %old_state_er(:)'
@@ -518,7 +500,7 @@ classdef QNN < handle
             this.theta = this.theta - this.velocity;
                     
             % Annealing the learning rate
-            this.alpha = this.qnnOption.learningRate*exp(-5*this.total_episodes/this.repTotalTraining);
+            % this.alpha = this.qnnOption.learningRate*exp(-5*this.total_episodes/this.repTotalTraining);
             
         end
 

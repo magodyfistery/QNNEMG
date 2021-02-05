@@ -147,7 +147,7 @@ for experiment_id=experiment_begin:experiment_end
             assignin('base','Stride',  stride);        %CAMBIAR - 20
 
             %%%%PARAMETRIZACION_DANNY%%%%
-            RepTraining        = 1;  % parameters_training(experiment_id, index_RepTraining);       % uo to 125 numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
+            RepTraining        = parameters_training(experiment_id, index_RepTraining);       % uo to 125 numero de muestras que voy a usar en el entrenamiento x cada usuario en la carpeta C:\Users\juanp\Desktop\QNN - EMG - RandomData - Copy\Data\Specific
             on  = true;
             off = false;
             assignin('base','Reward_type',     on);   %on si quiero recompensa -1 x ventana (clasif) y -10 x recog
