@@ -14,6 +14,7 @@ classdef QNN < handle
         
         number_gestures_taken_from_user;  % This is RepTraining, the same
         theta;
+        theta_freeze;
         exp_replay_lengthBuffer;
         % gameReplay -> exp replay with dims: exp_replay_lengthBufferx4
         % 4 = 1 reward, 1 action, 40 of length s, 0 of length of new s'
@@ -62,6 +63,7 @@ classdef QNN < handle
         
         function initTheta(this, theta)
             this.theta = theta;
+            this.theta_freeze = this.theta(:);
         end
         
         function [summary_episodes, summary_classifications_mode, ... 
@@ -150,9 +152,10 @@ classdef QNN < handle
                     
                     this.total_episodes = this.total_episodes + 1;
                     
+                    this.theta_freeze = this.theta(:);
                     
                     
-                    this.learnFromExperienceReplay();
+                    
                     
                 end
                 
@@ -254,6 +257,8 @@ classdef QNN < handle
                 if ~is_test
                     this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
                     this.saveExperienceReplay(state, action, reward, new_state);
+                    
+                    this.learnFromExperienceReplay();
                 end
                 
                 %Acondicionar vectores - si el signo anterior no es igual al signo acual entocnes mido tiempo
@@ -285,6 +290,8 @@ classdef QNN < handle
                 
                 state = new_state;
                 window_n = window_n + 1;
+                
+                
                 
                                 
             end
@@ -447,20 +454,23 @@ classdef QNN < handle
             options.lambda = this.qnnOption.lambda;
             
             weights = reshapeWeights(this.theta, this.qnnOption.numNeuronsLayers); 
+            weights_freeze = reshapeWeights(this.theta_freeze, this.qnnOption.numNeuronsLayers); 
             
             valid_replay = getRowsNotNan(this.gameReplay);
             amount_data_not_NAN =  size(valid_replay, 1); % this.exp_replay_lengthBuffer;
             
-            actual_batch_size = min(this.qnnOption.miniBatchSize, amount_data_not_NAN);
+            if amount_data_not_NAN < this.qnnOption.miniBatchSize
+                return;
+            end
             
-            [~, idx] = sort(rand(amount_data_not_NAN, 1));
-            randIdx = idx(1:actual_batch_size);
+            [~, idx] = sort(rand(this.qnnOption.miniBatchSize, 1));
+            randIdx = idx(1:this.qnnOption.miniBatchSize);
             
 
-            dataX = zeros(actual_batch_size, 40);  %64
-            dataY = zeros(actual_batch_size, 6);
+            dataX = zeros(this.qnnOption.miniBatchSize, 40);  %64
+            dataY = zeros(this.qnnOption.miniBatchSize, 6);
             % Computations for the minibatch
-            for numExample=1:actual_batch_size
+            for numExample=1:this.qnnOption.miniBatchSize
 
                 % Getting the value of Q(s, a)
                 old_state_er = valid_replay(randIdx(numExample), 1:40); %64
@@ -469,20 +479,21 @@ classdef QNN < handle
                 old_Qval_er = A{end}(:, 2:end);
                 % Getting the value of max_a_Q(s',a')
                 new_state_er = valid_replay(randIdx(numExample), (end - 39):end);  %63
-                [dummyVar, A] = forwardPropagation(new_state_er, weights,... %new_state_er(:)'
+                [dummyVar, A] = forwardPropagation(new_state_er, weights_freeze,... %new_state_er(:)'
                     this.qnnOption.transferFunctions, options);
                 new_Qval_er = A{end}(:, 2:end);
                 maxQval_er = max(new_Qval_er);
                 action_er = valid_replay(randIdx(numExample), 41);           %65
                 reward_er = valid_replay(randIdx(numExample), 42);
 
-                update_er = old_Qval_er(action_er) + 0.2*(reward_er + this.qnnOption.gamma*maxQval_er-old_Qval_er(action_er));
- 
-
+                
                 % Data for training the ANN
                 dataX(numExample, :) = old_state_er;  %old_state_er(:)'
                 dataY(numExample, :) = old_Qval_er;
-                dataY(numExample, action_er) = update_er;
+                
+                dataY(numExample, action_er) = reward_er + this.qnnOption.gamma*maxQval_er;
+                
+                
             end
             this.update_count = this.update_count + 1;
             % Updating the weights of the ANN
@@ -500,7 +511,7 @@ classdef QNN < handle
             this.theta = this.theta - this.velocity;
                     
             % Annealing the learning rate
-            % this.alpha = this.qnnOption.learningRate*exp(-5*this.total_episodes/this.repTotalTraining);
+            this.alpha = this.qnnOption.learningRate*exp(-5*this.total_episodes/this.repTotalTraining);
             
         end
 

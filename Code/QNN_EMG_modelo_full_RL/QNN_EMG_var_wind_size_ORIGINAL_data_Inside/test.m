@@ -1,8 +1,8 @@
 
 EMG_window_size = 200;
-Stride = 100;
+Stride = 20;
 gestureName_GT = "GESTO";
-Numero_Ventanas_GT = 8;
+Numero_Ventanas_GT = 40;
 gt_gestures_pts=zeros(1,Numero_Ventanas_GT);
 gt_gestures_pts(1,1)=EMG_window_size;
 groundTruthIndex_GT = [500 700];
