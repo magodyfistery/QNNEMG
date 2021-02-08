@@ -167,23 +167,23 @@ if userIndex~=dataPacketSize+1
         % =================================================
         % This code plots the RAW EMG and the groundTruth
         %
-        figure(1);
-        subplot(2,1,1);
-        plot(emgData)
-        xlim([0 length(emgData)])
-        ylim([-2 2])
-        grid on
-
-        subplot(2,1,1)
-        rect = findall(gcf,'Type', 'rectangle');
-        delete(rect);
-        rectangle('Position',[startWave -1  round(timeWindow*WindowsSize) 2],'EdgeColor','r')
-
-        subplot(2,1,2);
-        plot(groundTruth_)
-        xlim([0 length(emgData)])
-        ylim([-0.5 2])
-        grid on
+%         figure(1);
+%         subplot(2,1,1);
+%         plot(emgData)
+%         xlim([0 length(emgData)])
+%         ylim([-2 2])
+%         grid on
+% 
+%         subplot(2,1,1)
+%         rect = findall(gcf,'Type', 'rectangle');
+%         delete(rect);
+%         rectangle('Position',[startWave -1  round(timeWindow*WindowsSize) 2],'EdgeColor','r')
+% 
+%         subplot(2,1,2);
+%         plot(groundTruth_)
+%         xlim([0 length(emgData)])
+%         ylim([-0.5 2])
+%         grid on
         % =====================================================
 
 

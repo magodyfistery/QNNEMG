@@ -97,7 +97,7 @@ qnn.initTheta(randInitializeWeights(qnn.qnnOption.numNeuronsLayers))
 
 
 
-numEpochs = 1;
+numEpochs = 5;
 
 tStart = tic;
 
@@ -125,26 +125,20 @@ for epoch=1:numEpochs
 %     fprintf("Classif mode ok: %d, Classif mode NOT ok: %d\n", sum(summary_classifications_mode(1, :)), sum(summary_classifications_mode(2, :))); 
 %     fprintf("Total wins window: %d, Total losses window: %d\n", sum(sum(wins_by_episode)), sum(sum(loses_by_episode))); 
     
-    wins_t = wins_by_episode';
-    losses_t = loses_by_episode';
-    wins_in_total_episodes = wins_t(:);
-    losses_in_total_episodes = losses_t(:);
-
-    accuracy_by_episode = wins_in_total_episodes ./ (wins_in_total_episodes + losses_in_total_episodes);
-        
-    mean_acuracy_by_epoch(1, epoch) = mean(accuracy_by_episode);
     
     if epoch == numEpochs && verbose_level >= 0
         
         figure(2);
+        wins_t = wins_by_episode';
+        losses_t = loses_by_episode';
+        wins_in_total_episodes = wins_t(:);
+        losses_in_total_episodes = losses_t(:);
+
+        accuracy_by_episode = wins_in_total_episodes ./ (wins_in_total_episodes + losses_in_total_episodes);
         plot(1:length(accuracy_by_episode),accuracy_by_episode, 'b');
         % plot(1:length(accuracy(1,:)),accuracy(1,:));
-        
-        if numEpochs > 1
-            figure(6);
-            plot(1:length(mean_acuracy_by_epoch),mean_acuracy_by_epoch, 'b');
-        end
     end
+    mean_acuracy_by_epoch(1, epoch) = mean(accuracy_by_episode);
     
     
     

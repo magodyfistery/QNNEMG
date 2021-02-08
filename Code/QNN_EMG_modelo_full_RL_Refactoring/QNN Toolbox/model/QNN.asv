@@ -209,20 +209,20 @@ classdef QNN < handle
             tic;
             
             %Leo datos de muestras
-            
-            for window_n=1:num_windows
-                
-                [~,~,Features_GT,Tiempos_GT,Puntos_GT, ~, ~, ~, groundTruth_GT] = ...
+            window_n = 1;
+            [~,~,Features_GT,Tiempos_GT,Puntos_GT, ~, ~, ~, groundTruth_GT] = ...
                 Code_1(orientation,dataPacketSize, number_gestures_taken_from_user, repTotalTraining, verbose_level-1);
 
-                Vector_EMG_Tiempos_GT(1,window_n)=Tiempos_GT;      %copio primer valor en vector de tiempos de gt
-                Vector_EMG_Puntos_GT(1,window_n)=Puntos_GT;        %copio primer valor en vector de tiempos de gt
+            Vector_EMG_Tiempos_GT(1,window_n)=Tiempos_GT;      %copio primer valor en vector de tiempos de gt
+            Vector_EMG_Puntos_GT(1,window_n)=Puntos_GT;        %copio primer valor en vector de tiempos de gt
 
-                %---- Defino estado en base a cada ventana EMG
-                % window_state is not related with the S or S'
-                % because dowsnt matter what action is taken THE NEXT WINDOW STATE WILL BE THE SAME
-                state = table2array(Features_GT);
+            %---- Defino estado en base a cada ventana EMG
+            % window_state is not related with the S or S'
+            % because dowsnt matter what action is taken THE NEXT WINDOW STATE WILL BE THE SAME
+            state = table2array(Features_GT);
+
             
+            for window_n=1:num_windows
                 
                 [~, action] = this.selectAction(state, is_test);
                 
@@ -242,6 +242,17 @@ classdef QNN < handle
                 if verbose_level >=1 && reward~=0
                     fprintf("reward for state %d of %d in actual episode = %d\n", window_n, num_windows, reward);
                 end
+                
+                [~,~,Features_GT,Tiempos_GT,Puntos_GT, ~, ~, ~, groundTruth_GT] = ...
+                    Code_1(orientation,dataPacketSize, number_gestures_taken_from_user, repTotalTraining, verbose_level-1);
+
+                Vector_EMG_Tiempos_GT(1,window_n+1)=Tiempos_GT;      %copio primer valor en vector de tiempos de gt
+                Vector_EMG_Puntos_GT(1,window_n+1)=Puntos_GT;        %copio primer valor en vector de tiempos de gt
+
+                %---- Defino estado en base a cada ventana EMG
+                % window_state is not related with the S or S'
+                % because dowsnt matter what action is taken THE NEXT WINDOW STATE WILL BE THE SAME
+                new_state = table2array(Features_GT);
                 
                 if ~is_test
                     this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
@@ -276,6 +287,12 @@ classdef QNN < handle
                     TimePoints_vector(1,n1)=  kj(1,2);                 %AQUI CAMBIAR  %1000 puntos
 
                 end
+                
+                state = new_state;
+                window_n = window_n + 1;
+                
+                
+                
                                 
             end
             
