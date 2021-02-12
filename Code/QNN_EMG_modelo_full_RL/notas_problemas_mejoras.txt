@@ -1,0 +1,13 @@
+hay problemas de 20 con 5 para user 2 y 7
+y 400 con 50? para user 10?
+para el usuario 10 con experiment 27, window size 400, stride 60 hay problema "MATLAB:badsubscript, index in position 1 exceeds array bounds"
+
+Code_1: 59:         Vector_EMG_Puntos   = timeAnalized*200;  % SHOULD CHANGE 200 by window SIZE en lugar de 200?
+
+assignin('base','Numero_Ventanas_GT',Numero_Ventanas_GT-1); puede ser peligroso bajar el número de ventanas, comprobar
+
+
+
+numero de ventanas mal inicializado
+indice aleatorio en greedy select action (corregido)
+etiquetado de la señal (corregido?)

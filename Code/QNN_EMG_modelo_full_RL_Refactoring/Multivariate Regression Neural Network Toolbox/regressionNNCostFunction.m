@@ -139,6 +139,8 @@ for i = (numLayers - 1):-1:1
             transferFcnDerivative = Z{i} > reluThresh;
         case 'tanh'
             transferFcnDerivative = 1 - tansig(Z{i}).^2;
+        case 'sigmoid'
+            transferFcnDerivative = sigmoidGradient(Z{i});
         case 'purelin'
             transferFcnDerivative = ones( size(Z{i}) );
         case 'softplus'

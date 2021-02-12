@@ -1,0 +1,72 @@
+La inicialización de pesos influye en todo el entrenamiento, al igual que su normalización.
+activación lineal en la última capa dado que es Q-learning
+gamma debe ser menor a 1, como 0.999 o el infinito no converge
+usar alelos binarios en algoritmos genéticos permite mutar mejor?
+
+
+
+the goal
+is to learn a policy: a mapping from situations to the actions that are best in those
+situations.
+
+
+MDPs are a classical formalization of sequential decision making,
+where actions influence not just immediate rewards, but also subsequent situations,
+or states, and through those future rewards.
+
+The state must include information about all aspects
+of the past agent–environment interaction that make a di↵erence for the future. If it
+does, then the state is said to have the Markov property.
+
+los metodos de aproximación no recaen en esta regla (como QNN)
+
+s, s' e S
+
+
+and in Chapter 17 we consider how a Markov state can
+be efficiently learned and constructed from non-Markov observations.
+
+
+that is, when the agent–environment interaction
+breaks naturally into subsequences, which we call episodes,
+
+
+the next episode begins
+independently of how the previous one ended
+
+In episodic tasks we sometimes need
+to distinguish the set of all nonterminal states, denoted S, from the set of all states plus
+the terminal state, denoted S+.
+
+in many cases the agent–environment interaction does not break
+naturally into identifiable episodes, but goes on continually without limit. For example,
+this would be the natural way to formulate an on-going process-control task, or an
+application to a robot with a long life span
+
+where  gamma is a parameter, 0 <= gamma <= 1, called the discount rate.
+
+
+In tasks with small, finite state sets, it is possible to form these approximations using
+arrays or tables with one entry for each state (or state–action pair). This we call the
+tabular case, and the corresponding methods we call tabular methods.
+
+
+
+All involve interaction with
+the world, sequential decision making, and a goal usefully conceived of as accumulating
+rewards over time, and so all can be formulated as MDPs.
+
+
+
+SGD vs batch gradient
+
+Since we are considering just one example at a time the cost will fluctuate over the training examples and it will not necessarily decrease. But in the long run, you will see the cost decreasing with fluctuations.
+
+SGD causa las fluctuaciones enormes en el costo!, mini batch arregla este problema en el aprendizaje
+
+Also because the cost is so fluctuating, it will never reach the minima but it will keep dancing around it.
+
+minibatch hace que también fluctue pero no tanto
+
+minibatch hace una media de las gradientes al igual que batch.
+

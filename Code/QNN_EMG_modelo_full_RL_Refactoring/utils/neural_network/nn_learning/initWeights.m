@@ -7,7 +7,7 @@ function initial_thetas_rolled = initWeights(neurons_per_layer, lower_limit, upp
   end
   
   random_matrix = lower_limit + rand(sum_total_weights, 1) * upper_limit * 2;
-  initial_thetas_rolled = standard_normalization(random_matrix);
+  initial_thetas_rolled = standard_normalization(random_matrix)/100;
   
   
 end

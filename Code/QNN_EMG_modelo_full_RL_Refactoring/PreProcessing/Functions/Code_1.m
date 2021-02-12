@@ -1,4 +1,7 @@
-function [Numero_Ventanas,EMG,Vector_EMG_Features,Vector_EMG_Tiempos,Vector_EMG_Puntos,Nombre_Usuario,gestureName_,groundTruthIndex_,groundTruth_x] = Code_1(orientation,dataPacketSize,RepTraining,RepTotalTraining, verbose_level)
+function [Numero_Ventanas,EMG,Vector_EMG_Features,Vector_EMG_Tiempos,...
+    Vector_EMG_Puntos,Nombre_Usuario,gestureName_,...
+    groundTruthIndex_,groundTruth_x] = Code_1(orientation,...
+    RepTraining, verbose_level)
 
 
  Numero_Ventanas      = 0;
@@ -9,7 +12,7 @@ function [Numero_Ventanas,EMG,Vector_EMG_Features,Vector_EMG_Tiempos,Vector_EMG_
  Nombre_Usuario       = 'NaN';
  gestureName_         = 'NaN';
  groundTruthIndex_    = [0 1];
- groundTruth_x        = logical(zeros(1,1000));
+ groundTruth_x        = false(1,1000);
 
 
 testControl = evalin('base', 'testControl');  % :boolean
