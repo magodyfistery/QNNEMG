@@ -45,7 +45,7 @@ qnnOption = QNNOption(params.numNeuronsLayers, params.transferFunctions, ...
                 params.miniBatchSize, params.gamma, params.epsilon);
 
 qnn = QNN(qnnOption, params.rewardType, params.reserved_space_for_gesture);
-% qnn.initTheta(initWeightsOptimiced(qnn.qnnOption.numNeuronsLayers));
+qnn.initTheta(initWeightsOptimiced(qnn.qnnOption.numNeuronsLayers));
 
 
 
@@ -162,7 +162,7 @@ for epoch=1:params.numEpochs
             assignin('base','emgRepetition', rangeDown);
 
             [summary_episodes, summary_classifications_mode, wins_by_episode, ...
-                loses_by_episode] = qnn.train(params.window_size, ...
+                loses_by_episode, cummulative_reward_by_episode] = qnn.train(params.window_size, ...
                                     params.stride, userData, orientation, ...
                                     verbose_level-1, RepTraining);
 
@@ -197,7 +197,7 @@ for epoch=1:params.numEpochs
 
 
                 [validation_summary_episodes, validation_summary_classifications_mode,...
-                    validation_wins_by_episode, validation_loses_by_episode] = ...
+                    validation_wins_by_episode, validation_loses_by_episode, validation_cummulative_reward_by_episode] = ...
                     qnn.test(params.window_size, params.stride, userData, ...
                     orientation, verbose_level-1, repTrainingForValidation, true);
 
@@ -210,6 +210,13 @@ for epoch=1:params.numEpochs
 
             end
         end
+        
+        
+%         figure(10);
+%         plot(1:numel(cummulative_reward_by_episode), cummulative_reward_by_episode, 'b');
+%         hold on;
+%         plot(1:numel(validation_cummulative_reward_by_episode), validation_cummulative_reward_by_episode, 'r');
+%         hold off;
 
         if make_testing
 
@@ -231,7 +238,7 @@ for epoch=1:params.numEpochs
 
 
                 [testing_summary_episodes, testing_summary_classifications_mode,...
-                    testing_wins_by_episode, testing_loses_by_episode] = ...
+                    testing_wins_by_episode, testing_loses_by_episode, testing_cummulative_reward_by_episode] = ...
                     qnn.test(params.window_size, params.stride, userData, ...
                     orientation, verbose_level-1, repTrainingForTesting,false);
 
