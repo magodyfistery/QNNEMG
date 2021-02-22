@@ -192,7 +192,6 @@ classdef QNN < handle
                 
                 [~, action] = this.selectAction(state, is_test);
                 
-                mask_state = sparse_one_hot_encoding(action, length(QNN.gesture_names));
                 
                 % AQUI SE VAN GUARDADNO LAS ACCIONES PREDICHAS DENTRO DEl vector de UNA EPOCA
                 acciones_predichas_vector(window_n,1)=action;
@@ -206,6 +205,9 @@ classdef QNN < handle
                 if reward == this.amount_reward_correct
                     count_wins_in_episode = count_wins_in_episode + 1;
                 end
+                
+                mask_state = sparse_one_hot_encoding(action*reward, length(QNN.gesture_names));
+                
                 
                 cummulative_reward = cummulative_reward + reward;
                 
