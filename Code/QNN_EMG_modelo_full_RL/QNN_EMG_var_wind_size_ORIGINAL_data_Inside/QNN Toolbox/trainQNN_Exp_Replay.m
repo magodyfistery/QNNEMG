@@ -1,6 +1,4 @@
-function [weights, summary, theta] = trainQNN_Exp_Replay(th, ...
-    numNeuronsLayers, transferFunctions, options, typeWorld, ...
-    flagDisplayWorld, verbose, use_memory_action)
+function [weights, summary, theta] = trainQNN_Exp_Replay(th, numNeuronsLayers, transferFunctions, options, typeWorld, flagDisplayWorld, verbose)
 %%%%CAMBIODANNYINICIO%%%%
 % default parameter
 theta = th;
@@ -59,14 +57,9 @@ cumulativeEpochReward = 0;                                               % inici
 %     numStates = 13;                                                      % 13 posibles estados (-1 start, -1 win state, -1 lose state)
 % end
 %$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-state_length = 40;
-if use_memory_action
-    state_length = 46;
-end
 
-
-numTestingSamples = max(0.1*state_length, 20);                                       % numTestingSamples = max(0.1*numStates, 20);   ????????
-testStates = zeros(numTestingSamples, state_length);                                 % ???????????????????????????????????????
+numTestingSamples = max(0.1*40, 20);                                       % numTestingSamples = max(0.1*numStates, 20);   ????????
+testStates = zeros(numTestingSamples, 40);                                 % ???????????????????????????????????????
 
 % for i = 1:numTestingSamples                                              % ??????????
 %     stateAux = rand(1,40); %createWorld(tw);
@@ -94,11 +87,8 @@ historyAverageWins = zeros(1, numEpochs);
 % Experience replay initialization ------------------------------
 miniBatchSize = options.miniBatchSize;
 lengthBuffer = ceil(3*miniBatchSize);
-
-
-
-s  =  nan(lengthBuffer, state_length);
-sp =  nan(lengthBuffer, state_length);
+s  =  nan(lengthBuffer, 40);
+sp =  nan(lengthBuffer, 40);
 a  =  nan(lengthBuffer, 1);
 r  =  nan(lengthBuffer, 1);
 gameReplay = [s, a, r, sp]; %(state, action, reward, state')
@@ -136,8 +126,7 @@ energy_index = strcmp(orientation(:,1), userData.userInfo.name);
 rand_data=orientation{energy_index,6};
 emgRepetition = evalin('base','emgRepetition');
 numberPointsEmgData = length(userData.training{rand_data(emgRepetition),1}.emg);
-% -1 to be in alignment with Victor's calculus
-num_windows = getNumberWindows(numberPointsEmgData, EMG_window_size, Stride, false)-1;
+num_windows = getNumberWindows(numberPointsEmgData, EMG_window_size, Stride, false);
        
 etiquetas_labels_predichas_matrix=strings(num_windows,numEpochs);
 
@@ -254,14 +243,7 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
     
     %---- Defino estado inicial en base a cada ventana EMG  -----------------------------------------------------*
     %state = rand(1, 40);
-    
-    
-    state = table2array(Features_GT);           %Defino ESTADO inicial
-    
-    if use_memory_action
-        mask_state = [0 0 0 0 0 1];
-        state = [state, mask_state];
-    end
+    state =table2array(Features_GT);           %Defino ESTADO inicial
     
     %%%%CAMBIODANNYINICIO%%%%
     if verbose
@@ -411,10 +393,6 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
         
         %---- Aqui pongo los nuevos estados, los cuales corresponden a las features de cada ventana de señal EMG -----
         new_state = table2array(Features_GT);
-        if use_memory_action
-            mask_state = sparse_one_hot_encoding(action, 6);
-            new_state = [new_state, mask_state];
-        end
         %--------------------------------------------------------------
         
         %$$$$  REWARD - comparo if acciones_predichas_actual==etiqueta_actual - RECOMPENSA 0 siempre      -------
@@ -465,8 +443,6 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
         if idx == 0
             idx = lengthBuffer;
         end
-        
-        
         gameReplay(idx, :) = [state, action, reward, new_state];   %[state(:)', action, reward, new_state(:)'];
         %---------------------------------------------------------------
         
@@ -968,23 +944,23 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
         %disp('sampling')
         [dummy, idx] = sort(rand(lengthBuffer, 1));
         randIdx = idx(1:miniBatchSize);
-        dataX = zeros(miniBatchSize, state_length);  %64
+        dataX = zeros(miniBatchSize, 40);  %64
         dataY = zeros(miniBatchSize, 6);
         % Computations for the minibatch
         for numExample = 1:miniBatchSize
             % Getting the value of Q(s, a)
-            old_state_er = gameReplay(randIdx(numExample), 1:state_length); %64
+            old_state_er = gameReplay(randIdx(numExample), 1:40); %64
             [dummyVar, A] = forwardPropagation(old_state_er, weights,... %old_state_er(:)'
                 transferFunctions, options);
             old_Qval_er = A{end}(:, 2:end);
             % Getting the value of max_a_Q(s',a')
-            new_state_er = gameReplay(randIdx(numExample), (end - (state_length-1)):end);  %63
+            new_state_er = gameReplay(randIdx(numExample), (end - 39):end);  %63
             [dummyVar, A] = forwardPropagation(new_state_er, weights,... %new_state_er(:)'
                 transferFunctions, options);
             new_Qval_er = A{end}(:, 2:end);
             maxQval_er = max(new_Qval_er);
-            action_er = gameReplay(randIdx(numExample), state_length+1);           %65
-            reward_er = gameReplay(randIdx(numExample), state_length+2);           %66
+            action_er = gameReplay(randIdx(numExample), 41);           %65
+            reward_er = gameReplay(randIdx(numExample), 42);           %66
             %                 if reward_er == 0  %-1
             %                     % Non-terminal state
             %                     update_er = reward_er + gamma*maxQval_er;
