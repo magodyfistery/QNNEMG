@@ -162,7 +162,7 @@ for experiment_id=experiment_begin:experiment_end
             
             % Random initialization of the weights
             if use_memory_action
-                numNeuronsLayers(1) = numNeuronsLayers(1) + 6;
+                numNeuronsLayers(1) = 
             end
             theta = randInitializeWeights(numNeuronsLayers); 
 			
