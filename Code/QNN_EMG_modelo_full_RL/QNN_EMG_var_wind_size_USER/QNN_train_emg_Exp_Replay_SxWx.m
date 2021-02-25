@@ -170,7 +170,7 @@ for experiment_id=experiment_begin:experiment_end
             
             for realEpoch=1:numRealEpochs
                 
-                general_file = "_windowSize"+window_size+"_stride"+stride+"_epoch"+realEpoch;
+                general_file = "_windowSize"+window_size+"_stride"+stride+"_epoch"+realEpoch+"_memory-"+use_memory_action;
                 s2 = ""+experiment_id+general_file;
                 assignin('base','s2', s2);  
                 
@@ -264,7 +264,7 @@ for experiment_id=experiment_begin:experiment_end
             if numRealEpochs > 1
                 a1 = 'FigEpochs_Exp_';
                 a3 = '.png';
-                s2 = ""+experiment_id+"_windowSize"+window_size+"_stride"+stride+"_numEpochs"+numRealEpochs;
+                s2 = ""+experiment_id+"_windowSize"+window_size+"_stride"+stride+"_numEpochs"+numRealEpochs+"_memory-"+use_memory_action;
                 
                 saux = strcat("results/figures/", a1,s2,a3);
                 figure(5);

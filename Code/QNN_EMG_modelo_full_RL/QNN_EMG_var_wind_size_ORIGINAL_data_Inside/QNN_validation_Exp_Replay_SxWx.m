@@ -105,7 +105,7 @@ for experiment_id=experiment_begin:experiment_end
                 numEpochs  = RepTraining*(dataPacketSize1-2);  %numero total de muestras de todos los usuarios
             
                 
-                general_file = "_windowSize"+window_size+"_stride"+stride+"_epoch"+realEpoch;
+                general_file = "_windowSize"+window_size+"_stride"+stride+"_epoch"+realEpoch+"_memory-"+use_memory_action;
                 s2 = ""+experiment_id+general_file;
                 assignin('base','s2', s2);  
                 

@@ -83,7 +83,7 @@ numEpochs  = RepTraining*(dataPacketSize1-2);  %numero total de muestras de todo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%CAMBIODANNYINICIO%%%%
-s2 = ""+experiment_id+"_windowSize"+best_window_size+"_stride"+best_stride;
+s2 = ""+experiment_id+"_windowSize"+best_window_size+"_stride"+best_stride+"_memory-"+use_memory_action;
 dir_model = strcat("results/models/QNN_Trained_Model_", s2, ".mat");
 
 load(dir_model);     %CAMBIAR -> Aqui se carga el modelo entrenado
