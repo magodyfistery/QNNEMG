@@ -45,7 +45,7 @@ qnnOption = QNNOption(params.numNeuronsLayers, params.transferFunctions, ...
                 params.miniBatchSize, params.gamma, params.epsilon);
 
 qnn = QNN(qnnOption, params.rewardType, params.reserved_space_for_gesture);
-% qnn.initTheta(initWeightsOptimiced(qnn.qnnOption.numNeuronsLayers));
+qnn.initTheta(initWeightsOptimiced(qnn.qnnOption.numNeuronsLayers));
 
 
 

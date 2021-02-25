@@ -1,5 +1,5 @@
-function execute_experiments(model_name, experiment_ids, ...
-    verbose_level, list_users, make_validation, make_testing, user_reset)
+function execute_experiments(model_name, ...
+    verbose_level, list_users, make_validation, make_testing, user_reset, experiment_ids)
 
 dir_results = 'Experiments/resultsQNNByExperiment/'+model_name;
 
