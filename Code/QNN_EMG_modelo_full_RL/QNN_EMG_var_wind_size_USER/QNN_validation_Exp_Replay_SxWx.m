@@ -1,5 +1,6 @@
 function QNN_validation_Exp_Replay_SxWx(USER_ID, row_position, ...
-    new_rangeDown, experiment_begin, experiment_end, write_excel, windows_sizes, strides, numRealEpochs)
+    new_rangeDown, experiment_begin, experiment_end, write_excel, ...
+    windows_sizes, strides, numRealEpochs, use_memory_action)
 %%%%CAMBIODANNYINICIO%%%%
 if nargin < 6
     write_excel = true;    
@@ -155,7 +156,7 @@ for experiment_id=experiment_begin:experiment_end
                 rand_data=orientation{energy_index,6};
                 emgRepetition = evalin('base','emgRepetition');
                 numberPointsEmgData = length(userData.training{rand_data(emgRepetition),1}.emg);
-                num_windows = getNumberWindows(numberPointsEmgData, EMG_window_size, Stride, false);
+                num_windows = getNumberWindows(numberPointsEmgData, EMG_window_size, Stride, false)-1;
 
 
 
@@ -264,7 +265,10 @@ for experiment_id=experiment_begin:experiment_end
                     %---- Defino estado inicial en base a cada ventana EMG  -----------------------------------------------------*
                     %state = rand(1, 40);
                     state =table2array(Features_GT);           %Defino ESTADO inicial
-
+                    if use_memory_action
+                        mask_state = [0 0 0 0 0 1];
+                        state = [state, mask_state];
+                    end
                     %%%%CAMBIODANNYINICIO%%%%
                     if verbose
                         disp('initial state')
@@ -394,6 +398,10 @@ for experiment_id=experiment_begin:experiment_end
 
                         %new_state = getState(state, action);
                         new_state = table2array(Features_GT);
+                        if use_memory_action
+                            mask_state = sparse_one_hot_encoding(action, 6);
+                            new_state = [new_state, mask_state];
+                        end
 
                         %disp("etiquetas");disp(etiquetas);
                         %disp(size(etiquetas))

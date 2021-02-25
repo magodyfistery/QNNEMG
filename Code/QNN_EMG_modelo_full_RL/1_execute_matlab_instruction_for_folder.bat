@@ -12,13 +12,14 @@
 ::	%3 -> stridest en vector dentro de string  "[20 30 40]"
 ::	%4 -> usuario inicial
 ::	%5 -> hasta usuario final
+::	%6 -> use_memory_method
 
 
 :: Ejemplo de uso en el CMD:
 :: 1_execute_matlab_instruction_for_folder.bat 1 "[100 105]" "[20 30 40]" 1 30
 
 :: para ejecutar un usuario por usuario se usa de inicio 1 hasta 1, 4 a 4, 306 a 306, etc.
-:: Ejemplo de solo ejecutar el usuario 288: 1_execute_matlab_instruction_for_folder.bat 1 "[200]" "[20 30 40]" 288 288
+:: Ejemplo de solo ejecutar el usuario 288: 1_execute_matlab_instruction_for_folder.bat 1 "[200]" "[20 30 40]" 288 288 false
 
 SET /A numEpochs = %1
 
@@ -29,6 +30,7 @@ set strides=%stridest:~1,-1%
 
 SET /A inicio = %4
 SET /A fin = %5 + 1
+set use_memory_method=%6
 
 :: este es el directorio BASE (sin número) de la carpeta en donde está el escript
 set folder=QNN_EMG_var_wind_size_USER
@@ -46,7 +48,7 @@ set execute_from_folder=%folder%%inicio%
 :: cd('C:\Users\ALAN_TURING\Desktop\AUTOMATED Code QNN\QNN_wind-stride_improved\%execute_from_folder%'); QNN_train_emg_Exp_Replay_SxWx(%inicio%, 27, 32, true, true, [250], [20 40 50]);  quit;
 
 
-set instruction="try; actual_dir=pwd; cd(actual_dir+string('/%execute_from_folder%'));  QNN_train_emg_Exp_Replay_SxWx(%inicio%, 27, 32, true, true, %window_sizes%, %strides%, %numEpochs%); quit; catch ME; disp(ME); end;"
+set instruction="try; actual_dir=pwd; cd(actual_dir+string('/%execute_from_folder%'));  QNN_train_emg_Exp_Replay_SxWx(%inicio%, 27, 32, true, true, %window_sizes%, %strides%, %numEpochs%, %use_memory_method%); quit; catch ME; disp(ME); end;"
 
 echo %instruction%
 

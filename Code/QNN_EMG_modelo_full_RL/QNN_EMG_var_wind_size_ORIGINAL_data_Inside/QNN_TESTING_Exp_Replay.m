@@ -1,4 +1,4 @@
-function QNN_TESTING_Exp_Replay(USER_ID, SHEET_NAME, new_row_position, new_rangeDown, experiment_id, best_window_size, best_stride, write_excel)
+function QNN_TESTING_Exp_Replay(USER_ID, SHEET_NAME, new_row_position, new_rangeDown, experiment_id, best_window_size, best_stride, write_excel, use_memory_action)
 %%%%CAMBIODANNYINICIO%%%%
 if nargin < 8
     write_excel = true;    
@@ -215,7 +215,10 @@ for i = 1:numEpochs %numEvaluations
     %---- Defino estado inicial en base a cada ventana EMG  -----------------------------------------------------*
     %state = rand(1, 40);
     state =table2array(Features_GT);           %Defino ESTADO inicial
-
+    if use_memory_action
+        mask_state = [0 0 0 0 0 1];
+        state = [state, mask_state];
+    end
     %%%%CAMBIODANNYINICIO%%%%
     if verbose
         disp('initial state')
@@ -345,7 +348,10 @@ for i = 1:numEpochs %numEvaluations
 
         %new_state = getState(state, action);
         new_state = table2array(Features_GT);
-
+        if use_memory_action
+            mask_state = sparse_one_hot_encoding(action, 6);
+            new_state = [new_state, mask_state];
+        end
         %disp("etiquetas");disp(etiquetas);
         %disp(size(etiquetas))
         assignin('base','etiquetas',etiquetas);
