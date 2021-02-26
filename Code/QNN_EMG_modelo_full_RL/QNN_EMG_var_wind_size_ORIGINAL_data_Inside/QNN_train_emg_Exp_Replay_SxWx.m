@@ -1,5 +1,6 @@
 function QNN_train_emg_Exp_Replay_SxWx(USER_ID, experiment_begin, ...
-    experiment_end, make_validation_too, write_excel, windows_sizes, strides, numRealEpochs)
+    experiment_end, make_validation_too, write_excel, windows_sizes, ...
+    strides, numRealEpochs, use_memory_action)
 %{
     Parameters:
         USER_ID: int -> número del usuario. Ejms: 1,3,5,306
@@ -31,6 +32,7 @@ function QNN_train_emg_Exp_Replay_SxWx(USER_ID, experiment_begin, ...
 clc;
 close all;
 warning off all;
+rng('default');
 
 %%%%CAMBIODANNYINICIO%%%%
 global user_id;
@@ -160,6 +162,9 @@ for experiment_id=experiment_begin:experiment_end
             assignin('base','packetEMG',     on);
             
             % Random initialization of the weights
+            if use_memory_action
+                numNeuronsLayers(1) = numNeuronsLayers(1) + 6;
+            end
             theta = randInitializeWeights(numNeuronsLayers); 
 			
 			accuracy_by_epoch = zeros(1, numRealEpochs);
@@ -219,7 +224,9 @@ for experiment_id=experiment_begin:experiment_end
 
 
                 %%%%PARAMETRIZACION_DANNY Y CAMBIO EN trainQNN (verbose) y summary%%%%
-                [weights, summary, theta] = trainQNN_Exp_Replay(theta, numNeuronsLayers, transferFunctions, options, typeWorld, flagDisplayWorld, false);
+                [weights, summary, theta] = trainQNN_Exp_Replay(theta, ...
+                    numNeuronsLayers, transferFunctions, options, ...
+                    typeWorld, flagDisplayWorld, false, use_memory_action);
 
                 accuracy_by_epoch(1, realEpoch) = (summary(1)/(summary(1)+summary(4)) + summary(2)/(summary(2)+summary(5)) + summary(3)/(summary(3)+summary(6)))/3;
                 elapsedTimeHours = toc(tStart)/3600;
@@ -281,7 +288,8 @@ row_position = row_position + 1;
 if make_validation_too
     QNN_validation_Exp_Replay_SxWx(USER_ID, row_position, ...
         26+parameters_training(experiment_id, index_RepTraining), ...
-        experiment_begin, experiment_end, write_excel, windows_sizes, strides, numRealEpochs);
+        experiment_begin, experiment_end, write_excel, windows_sizes, ...
+        strides, numRealEpochs, use_memory_action);
 end
 %%%%CAMBIODANNYFIN%%%%
 end

@@ -265,10 +265,14 @@ for experiment_id=experiment_begin:experiment_end
                     %---- Defino estado inicial en base a cada ventana EMG  -----------------------------------------------------*
                     %state = rand(1, 40);
                     state =table2array(Features_GT);           %Defino ESTADO inicial
+                    
+                    
+                    state = (state - min(state)) / ( max(state) - min(state) );
                     if use_memory_action
                         mask_state = [0 0 0 0 0 1];
                         state = [state, mask_state];
                     end
+                    
                     %%%%CAMBIODANNYINICIO%%%%
                     if verbose
                         disp('initial state')
@@ -398,11 +402,13 @@ for experiment_id=experiment_begin:experiment_end
 
                         %new_state = getState(state, action);
                         new_state = table2array(Features_GT);
+                        new_state = (new_state - min(new_state)) / ( max(new_state) - min(new_state) );
+
                         if use_memory_action
                             mask_state = sparse_one_hot_encoding(action, 6);
                             new_state = [new_state, mask_state];
                         end
-
+                        
                         %disp("etiquetas");disp(etiquetas);
                         %disp(size(etiquetas))
                         assignin('base','etiquetas',etiquetas);
