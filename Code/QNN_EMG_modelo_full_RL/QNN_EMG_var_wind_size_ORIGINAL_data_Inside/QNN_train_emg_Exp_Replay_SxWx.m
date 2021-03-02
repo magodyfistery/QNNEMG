@@ -1,5 +1,6 @@
 function QNN_train_emg_Exp_Replay_SxWx(USER_ID, experiment_begin, ...
     experiment_end, make_validation_too, write_excel, windows_sizes, strides, numRealEpochs)
+
 %{
     Parameters:
         USER_ID: int -> número del usuario. Ejms: 1,3,5,306
@@ -27,7 +28,7 @@ function QNN_train_emg_Exp_Replay_SxWx(USER_ID, experiment_begin, ...
   
   QNN_train_emg_Exp_Replay_SxWx(288, 27, 30, true, true, [200], [50 100], 2)    
 %}
-
+rng(1,'philox')
 clc;
 close all;
 warning off all;

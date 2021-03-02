@@ -4,7 +4,7 @@ function gt_gestures_labels = mapGroundTruthToLabels(numWindows, emg_window_size
 % if the window is holding a EMG_window_size/5 part at least of the groundtruth, is labeled as the gesture.
 
 if nargin < 6
-    part_of_ground_truth_to_identify = 0.3;
+    part_of_ground_truth_to_identify = 0.2;
 end
 
 %Creo vector con limite derecho de cada ventana. Ejm: win=200,stride=30 -> 200 230 260.... 980

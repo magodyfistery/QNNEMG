@@ -1,6 +1,8 @@
 function [weights, summary, theta] = trainQNN_Exp_Replay(th, numNeuronsLayers, transferFunctions, options, typeWorld, flagDisplayWorld, verbose)
 %%%%CAMBIODANNYINICIO%%%%
 % default parameter
+
+
 theta = th;
 summary = [];
 if nargin<6
@@ -17,7 +19,7 @@ numEpochs = options.numEpochs;                                          % option
 % Learning rate for training the ANN
 alpha = options.learningRate;                                           % 9e-3; -> learningRate = alpha
 % Epsilon
-epsilon0 = options.epsilon;                                             %Initial value of epsilon for the epsilon-greedy exploration = 1
+epsilon0 = 0; %options.epsilon;                                             %Initial value of epsilon for the epsilon-greedy exploration = 1
 epsilon = epsilon0;
 if strcmp(options.typeUpdate, 'momentum')                                %  Momentum update options.typeUpdate='momentum' (string)
     % Setup for momentum update of the weights of the ANN
@@ -316,6 +318,7 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
         % Predicting the response of the ANN for the current state
         [dummyVar, A] = forwardPropagation(state, weights,...     % ANN to obtain update weights - state is a vector
             transferFunctions, options);
+        
         
         Qval = A{end}(:, 2:end);                                  % 6 Valores de Q - uno por cada accion
         
@@ -940,10 +943,10 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
     end
     
     % Sampling randomly the data from the experience replay buffer
-    if numIterationTotal > ceil( 1.05*lengthBuffer )
+    if numIterationTotal >= lengthBuffer  % ceil( 1.05*lengthBuffer )
         %disp('sampling')
         [dummy, idx] = sort(rand(lengthBuffer, 1));
-        randIdx = idx(1:miniBatchSize);
+        randIdx = 1:miniBatchSize; %idx(1:miniBatchSize);
         dataX = zeros(miniBatchSize, 40);  %64
         dataY = zeros(miniBatchSize, 6);
         % Computations for the minibatch
@@ -1035,9 +1038,9 @@ for epoch = 1:numEpochs %numero total de muestras de todos los usuarios
     %%%%CAMBIODANNYFIN%%%%
     
     % Annealing the epsilon
-    if epsilon > 0.10
-        epsilon = 0.2; %epsilon0*exp(-7*epoch/numEpochs);
-    end
+%     if epsilon > 0.10
+%         epsilon = 0.2; %epsilon0*exp(-7*epoch/numEpochs);
+%     end
     
     
     

@@ -5,8 +5,7 @@ function [training_accuracy, validation_accuracy, testing_accuracy, qnn] ...
     make_validation, make_testing, user_reset)
 %{
 
-%}
-    
+%} 
 validation_accuracy = -1;
 testing_accuracy = -1;
 
@@ -44,10 +43,12 @@ qnnOption = QNNOption(params.numNeuronsLayers, params.transferFunctions, ...
                 params.momentum, params.initialMomentum, ...
                 params.miniBatchSize, params.gamma, params.epsilon);
 
+
+rng(1,'philox')
 qnn = QNN(qnnOption, params.rewardType, params.reserved_space_for_gesture);
-qnn.initTheta(initWeightsOptimiced(qnn.qnnOption.numNeuronsLayers));
+qnn.initTheta(randInitializeWeights(qnn.qnnOption.numNeuronsLayers));
 
-
+rng('default')
 
 t_start = tic;
 for epoch=1:params.numEpochs
