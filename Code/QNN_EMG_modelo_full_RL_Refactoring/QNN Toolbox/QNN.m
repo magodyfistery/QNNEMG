@@ -114,7 +114,7 @@ classdef QNN < handle
                 
                 
                 this.theta_freeze = this.theta(:);
-                this.learnFromExperienceReplay(episode, number_gestures_taken_from_user_for_training);
+                % this.learnFromExperienceReplay(episode, number_gestures_taken_from_user_for_training);
                 
                 
             end
@@ -214,7 +214,7 @@ classdef QNN < handle
                     this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
                     this.saveExperienceReplay(state, action, reward, new_state);
                     
-                    % this.learnFromExperienceReplay(episode, number_gestures_taken_from_user);
+                    this.learnFromExperienceReplay(episode, number_gestures_taken_from_user);
                 end
                 
                 %Acondicionar vectores - si el signo anterior no es igual al signo acual entocnes mido tiempo
