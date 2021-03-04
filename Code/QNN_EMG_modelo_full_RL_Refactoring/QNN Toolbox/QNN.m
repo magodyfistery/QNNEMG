@@ -186,7 +186,7 @@ classdef QNN < handle
                 % WO    = 1 % WI    = 2 % FIST  = 3 % OPEN  = 4 % PINCH = 5 % RELAX = 6
                 etiquetas_labels_predichas_vector(window_n,1)=QNN.convertActionIndexToLabel(action);
                 
-                real_action=gt_gestures_labels_num(window_n+1);
+                real_action=gt_gestures_labels_num(window_n);
                 
                 [reward, ~] = this.applyActionAndGetReward(action, real_action, this.Reward_type, state);
                 
@@ -212,7 +212,7 @@ classdef QNN < handle
                 
                 if ~is_test
                     this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
-                    this.saveExperienceReplay(state, action, reward, new_state);
+                    this.saveExperienceReplay(state, action, reward, state);
                     
                     this.learnFromExperienceReplay(episode, number_gestures_taken_from_user);
                 end
@@ -383,25 +383,22 @@ classdef QNN < handle
         function saveExperienceReplay(this, state, action, reward, new_state)
             
                     
-            %---- Experience replay storage ------------------------------------
+            %---- Experience replay storage -----------------------------------
             
-            % if reward < 0
-                % this.num_correct_predictions = this.num_correct_predictions + 1;
-                
-%             this.index_gesture(action) = this.index_gesture(action) + 1;
-%             index_experience_replay = mod(this.index_gesture(action), this.reserved_space_for_gesture);
-%             if index_experience_replay == 0
-%                 index_experience_replay = this.reserved_space_for_gesture;
-%             end
-% 
-%             offset = (action-1) * this.reserved_space_for_gesture;
-%             this.gameReplay(offset+index_experience_replay, :) = [state, action, reward, new_state];   %[state(:)', action, reward, new_state(:)'];
-
-            index_replay = mod(sum(~isnan(this.gameReplay(:,1))) + 1, size(this.gameReplay, 1));
-            if index_replay == 0
-               index_replay =  size(this.gameReplay, 1);
+            this.index_gesture(action) = this.index_gesture(action) + 1;
+            index_experience_replay = mod(this.index_gesture(action), this.reserved_space_for_gesture);
+            if index_experience_replay == 0
+                index_experience_replay = this.reserved_space_for_gesture;
             end
-            this.gameReplay(index_replay, :) = [state, action, reward, new_state];   %[state(:)', action, reward, new_state(:)'];
+
+            offset = (action-1) * this.reserved_space_for_gesture;
+            this.gameReplay(offset+index_experience_replay, :) = [state, action, reward, new_state];   %[state(:)', action, reward, new_state(:)'];
+
+%             index_replay = mod(sum(~isnan(this.gameReplay(:,1))) + 1, size(this.gameReplay, 1));
+%             if index_replay == 0
+%                index_replay =  size(this.gameReplay, 1);
+%             end
+%             this.gameReplay(index_replay, :) = [state, action, reward, new_state];   %[state(:)', action, reward, new_state(:)'];
 
             
         end
@@ -452,15 +449,16 @@ classdef QNN < handle
                 dataY(numExample, :) = old_Qval_er;
                 
                 
+                update_er = reward_er + this.qnnOption.gamma*maxQval_er;
                 
-                if reward_er == -1  %-1       OJO CON ESTE
-                    % Non-terminal state
-                    update_er = reward_er + this.qnnOption.gamma*maxQval_er;
-                else
-                    % Terminal state
-                    %update_er = reward_er + this.qnnOption.gamma*maxQval_er;
-                    update_er = reward_er;
-                end
+%                 if reward_er == -1  %-1       OJO CON ESTE
+%                     % Non-terminal state
+%                     update_er = reward_er + this.qnnOption.gamma*maxQval_er;
+%                 else
+%                     % Terminal state
+%                     %update_er = reward_er + this.qnnOption.gamma*maxQval_er;
+%                     update_er = reward_er;
+%                 end
                 
                 dataY(numExample, action_er) = update_er;
 

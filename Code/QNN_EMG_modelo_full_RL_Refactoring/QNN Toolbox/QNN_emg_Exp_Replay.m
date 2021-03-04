@@ -332,9 +332,6 @@ showFigureAccuracyByEpisode(dir_specific_experiment, filename_experiment, ...
 
 figure(3);
 part = qnn.cost;
-if length(qnn.cost) > 1000
-    part = qnn.cost(end-999:end);    
-end
 
 plot(1:length(part), part);
 xlabel('N° update weights')
