@@ -472,12 +472,12 @@ classdef QNN < handle
             end
             
             
-            % this.theta = this.theta - this.qnnOption.learningRate * gradient;
+            this.theta = this.theta - this.qnnOption.learningRate * gradient;
             
-            this.velocity = this.qnnOption.initialMomentum*this.velocity + this.alpha*gradient;
-            this.theta = this.theta - this.velocity;
-            % Annealing the learning rate
-            this.alpha = this.qnnOption.learningRate*exp(-5*episode/number_gestures_taken_from_user_for_training);
+%             this.velocity = this.qnnOption.initialMomentum*this.velocity + this.alpha*gradient;
+%             this.theta = this.theta - this.velocity;
+%             % Annealing the learning rate
+%             this.alpha = this.qnnOption.learningRate*exp(-5*episode/number_gestures_taken_from_user_for_training);
             
         end
 

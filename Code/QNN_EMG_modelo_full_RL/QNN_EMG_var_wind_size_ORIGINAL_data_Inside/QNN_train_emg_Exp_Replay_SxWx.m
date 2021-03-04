@@ -160,6 +160,7 @@ for experiment_id=experiment_begin:experiment_end
             assignin('base','packetEMG',     on);
             
             % Random initialization of the weights
+            % rng(10000)
             theta = randInitializeWeights(numNeuronsLayers); 
 			
 			accuracy_by_epoch = zeros(1, numRealEpochs);
