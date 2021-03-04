@@ -114,7 +114,7 @@ classdef QNN < handle
                 
                 
                 this.theta_freeze = this.theta(:);
-                this.learnFromExperienceReplay(episode, number_gestures_taken_from_user_for_training);
+                % this.learnFromExperienceReplay(episode, number_gestures_taken_from_user_for_training);
                 
                 
             end
@@ -171,9 +171,7 @@ classdef QNN < handle
             Vector_EMG_Tiempos_GT(1,1)=Tiempos_GT;      %copio primer valor en vector de tiempos de gt
             Vector_EMG_Puntos_GT(1,1)=Puntos_GT;        %copio primer valor en vector de tiempos de gt
             state = table2array(Features_GT);
-%             if sum(state) > 0
-%                 state = (state - min(state))/(max(state) - min(state));
-%             end
+            
             
             
             
@@ -205,16 +203,14 @@ classdef QNN < handle
                 Vector_EMG_Puntos_GT(1,window_n+1)=Puntos_GT;        %copio primer valor en vector de tiempos de gt
                 
                 new_state = table2array(Features_GT);
-%                 if sum(new_state) > 0
-%                     new_state = (new_state - min(new_state))/(max(new_state) - min(new_state));
-%                 end
+                if new_state
                 
                 
                 if ~is_test
                     this.total_num_windows_predicted = this.total_num_windows_predicted + 1;
                     this.saveExperienceReplay(state, action, reward, new_state);
                     
-                    % this.learnFromExperienceReplay(episode, number_gestures_taken_from_user);
+                    this.learnFromExperienceReplay(episode, number_gestures_taken_from_user);
                 end
                 
                 %Acondicionar vectores - si el signo anterior no es igual al signo acual entocnes mido tiempo
@@ -451,14 +447,11 @@ classdef QNN < handle
                 
                 dataY(numExample, :) = old_Qval_er;
                 
-                
-                
                 if reward_er == -1  %-1       OJO CON ESTE
                     % Non-terminal state
                     update_er = reward_er + this.qnnOption.gamma*maxQval_er;
                 else
                     % Terminal state
-                    %update_er = reward_er + this.qnnOption.gamma*maxQval_er;
                     update_er = reward_er;
                 end
                 
@@ -474,10 +467,6 @@ classdef QNN < handle
                 this.theta,...
                 this.qnnOption.transferFunctions,...
                 options);
-            m_t = mean(this.theta);
-            if isnan(m_t) || isinf(m_t)
-               disp('debug'); 
-            end
             % Increase momentum after momIncrease iterations
             if this.total_episodes == this.qnnOption.numEpochsToIncreaseMomentum
                 this.qnnOption.initialMomentum = this.qnnOption.momentum;

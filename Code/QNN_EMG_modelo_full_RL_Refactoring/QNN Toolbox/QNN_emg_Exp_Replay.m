@@ -43,12 +43,8 @@ qnnOption = QNNOption(params.numNeuronsLayers, params.transferFunctions, ...
                 params.momentum, params.initialMomentum, ...
                 params.miniBatchSize, params.gamma, params.epsilon);
 
-
-rng(1,'philox')
 qnn = QNN(qnnOption, params.rewardType, params.reserved_space_for_gesture);
-qnn.initTheta(randInitializeWeights(qnn.qnnOption.numNeuronsLayers));
-
-rng('default')
+qnn.initTheta(initWeightsOptimiced(qnn.qnnOption.numNeuronsLayers));
 
 t_start = tic;
 for epoch=1:params.numEpochs
@@ -335,7 +331,12 @@ showFigureAccuracyByEpisode(dir_specific_experiment, filename_experiment, ...
         make_validation, make_testing, 2)
 
 figure(3);
-plot(1:length(qnn.cost), qnn.cost);
+part = qnn.cost;
+if length(qnn.cost) > 1000
+    part = qnn.cost(end-999:end);    
+end
+
+plot(1:length(part), part);
 xlabel('N° update weights')
 ylabel('Cost')
 legend('training cost')
